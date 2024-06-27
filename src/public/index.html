@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leader-Follower Identity Tracker (LFIT)</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div id="main-welcome-page" class="page">
+        <h1>Welcome to the Leader-Follower Identity Tracker (LFIT)</h1>
+        <div class="option-buttons">
+            <button id="reflector-btn">LFIT-Reflector</button>
+            <button id="reporter-btn">LFIT-Reporter</button>
+        </div>
+    </div>
+
+    <div id="reflector-section" style="display: none;">
+        <div id="welcome-page" class="page">
+            <h2>LFIT-Reflector</h2>
+            <p>Please enter your unique ID to begin.</p>
+            <input type="text" id="user-id" placeholder="Enter your ID">
+            <button id="start-btn">Start</button>
+        </div>
+
+        <div id="grid-page" class="page" style="display: none;">
+            <h2>Leader-Follower Identity Grid</h2>
+            <p>Click on the grid to indicate your current leader-follower identity.</p>
+            <div class="grid-container">
+                <div class="grid" id="grid">
+                    <div class="x-axis"></div>
+                    <div class="y-axis"></div>
+                </div>
+                <div class="label x-label">Follower</div>
+                <div class="label y-label">Leader</div>
+                <div class="scale bottom-left">Not at all</div>
+                <div class="scale bottom-right">Very much so</div>
+                <div class="scale top-left">Very much so</div>
+                <div class="point" id="point"></div>
+            </div>
+            <button id="grid-submit-btn" disabled>Next</button>
+        </div>
+
+        <div id="questions-page" class="page" style="display: none;">
+            <h2>Additional Questions</h2>
+            <div class="question">
+                <label for="novelty">How novel was the event?</label>
+                <input type="range" id="novelty" min="1" max="5">
+            </div>
+            <div class="question">
+                <label for="disruption">How disruptive was the event?</label>
+                <input type="range" id="disruption" min="1" max="5">
+            </div>
+            <div class="question">
+                <label for="ordinariness">How ordinary was the event?</label>
+                <input type="range" id="ordinariness" min="1" max="5">
+            </div>
+            <div class="question">
+                <label for="event-description">Describe the event:</label>
+                <textarea id="event-description" rows="4"></textarea>
+            </div>
+            <button id="questions-submit-btn">Submit</button>
+        </div>
+
+        <div id="completion-page" class="page" style="display: none;">
+            <h2>Thank you for your submission!</h2>
+            <p>Your response has been recorded.</p>
+            <button id="new-rating-btn">Make Another Rating</button>
+            <button id="finish-btn">Finish</button>
+        </div>
+    </div>
+
+    <div id="reporter-section" class="page" style="display: none;">
+        <h2>LFIT-Reporter</h2>
+        <p>Enter your ID to view your data:</p>
+        <input type="text" id="reporter-user-id" placeholder="Enter your ID">
+        <button id="load-data-btn">Load Data</button>
+        <div id="charts-container" style="display: none;">
+            <canvas id="identity-chart"></canvas>
+            <canvas id="event-chart"></canvas>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+
+</html>
