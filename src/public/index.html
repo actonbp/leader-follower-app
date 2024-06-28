@@ -7,6 +7,7 @@
     <title>Leader-Follower Identity Tracker (LFIT)</title>
     <link rel="stylesheet" href="/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body>
@@ -70,6 +71,7 @@
             <p>Your response has been recorded.</p>
             <button id="new-rating-btn">Make Another Rating</button>
             <button id="finish-btn">Finish</button>
+            <button id="export-pdf-btn">Export to PDF</button>
         </div>
     </div>
 
@@ -78,13 +80,36 @@
         <p>Enter your ID to view your data:</p>
         <input type="text" id="reporter-user-id" placeholder="Enter your ID">
         <button id="load-data-btn">Load Data</button>
-        <div id="charts-container" style="display: none;">
-            <canvas id="identity-chart"></canvas>
-            <canvas id="event-chart"></canvas>
+        <div id="reporter-content" style="display: none;">
+            <div id="identity-tracker">
+                <h3>Your Leader-Follower Identity Tracker</h3>
+                <canvas id="identity-trajectory-chart"></canvas>
+            </div>
+            
+            <div id="general-identity">
+                <h3>Your General Identity and Equilibrium</h3>
+                <div id="identity-summary"></div>
+                <div id="liminality-meter"></div>
+            </div>
+            
+            <div id="day-to-day-dynamics">
+                <h3>Your Day-to-Day Identity Dynamics</h3>
+                <canvas id="identity-variation-chart"></canvas>
+                <div id="switching-summary"></div>
+            </div>
+            
+            <div id="daily-events">
+                <h3>Your Daily Events</h3>
+                <canvas id="event-strength-chart"></canvas>
+                <div id="event-summary"></div>
+            </div>
         </div>
+        <button id="export-reporter-pdf-btn">Export to PDF</button>
     </div>
 
     <script src="/js/main.js"></script>
+    <script src="/js/reporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 
 </html>

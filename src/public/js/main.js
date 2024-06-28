@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(pageId).style.display = 'block';
     }
 
+    function showCompletionPage() {
+        showPage('completion-page');
+        document.getElementById('export-pdf-btn').style.display = 'inline-block';
+    }
+
     // Main Welcome Page
     document.getElementById('reflector-btn').addEventListener('click', () => {
         document.getElementById('main-welcome-page').style.display = 'none';
@@ -73,15 +78,17 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify(userData),
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-                showPage('completion-page');
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('There was an error submitting your data. Please try again.');
-            });
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            showCompletionPage();
+            // Make sure userData is up-to-date here
+            userData = data; // Update userData with the latest submission data
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('There was an error submitting your data. Please try again.');
+        });
     });
 
     document.getElementById('new-rating-btn').addEventListener('click', () => {
@@ -99,118 +106,37 @@ document.addEventListener('DOMContentLoaded', () => {
         userData = {};
     });
 
-    // Reporter Section
-    document.getElementById('load-data-btn').addEventListener('click', () => {
-        const userId = document.getElementById('reporter-user-id').value;
-        if (userId) {
-            fetch(`/get-user-data/${userId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        document.getElementById('charts-container').style.display = 'block';
-                        createCharts(data);
-                    } else {
-                        alert('No data found for this user ID.');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    alert('There was an error loading the data. Please try again.');
-                });
-        } else {
-            alert('Please enter your ID');
-        }
-    });
-
-    function createCharts(data) {
-        // Identity Chart
-        const identityCtx = document.getElementById('identity-chart').getContext('2d');
-        new Chart(identityCtx, {
-            type: 'line',
-            data: {
-                labels: data.map(d => d.submitTime),
-                datasets: [{
-                    label: 'Leader Identity',
-                    data: data.map(d => d.leaderScore),
-                    borderColor: 'blue',
-                    fill: false
-                }, {
-                    label: 'Follower Identity',
-                    data: data.map(d => d.followerScore),
-                    borderColor: 'red',
-                    fill: false
-                }]
-            },
-            options: {
-                responsive: true,
-                title: {
-                    display: true,
-                    text: 'Leader-Follower Identity Over Time'
-                },
-                scales: {
-                    xAxes: [{
-                        type: 'time',
-                        time: {
-                            unit: 'day'
-                        }
-                    }],
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    }]
-                }
-            }
-        });
-
-        // Event Chart
-        const eventCtx = document.getElementById('event-chart').getContext('2d');
-        new Chart(eventCtx, {
-            type: 'bar',
-            data: {
-                labels: data.map(d => d.submitTime),
-                datasets: [{
-                    label: 'Novelty',
-                    data: data.map(d => d.novelty),
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }, {
-                    label: 'Disruption',
-                    data: data.map(d => d.disruption),
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }, {
-                    label: 'Ordinariness',
-                    data: data.map(d => d.ordinariness),
-                    backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                    borderColor: 'rgba(255, 206, 86, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                title: {
-                    display: true,
-                    text: 'Event Characteristics Over Time'
-                },
-                scales: {
-                    xAxes: [{
-                        type: 'time',
-                        time: {
-                            unit: 'day'
-                        }
-                    }],
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true,
-                            max: 5
-                        }
-                    }]
-                }
-            }
-        });
+    function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(18);
+        doc.text('LFIT Reflector Report', 105, 15, { align: 'center' });
+        
+        // Add user ID
+        doc.setFontSize(12);
+        doc.text(`User ID: ${userData.userId}`, 20, 30);
+        
+        // Add Leader-Follower scores
+        doc.text(`Leader Score: ${userData.leaderPercent}%`, 20, 40);
+        doc.text(`Follower Score: ${userData.followerPercent}%`, 20, 50);
+        
+        // Add event details
+        doc.text('Event Details:', 20, 70);
+        doc.text(`Novelty: ${userData.novelty}`, 30, 80);
+        doc.text(`Disruption: ${userData.disruption}`, 30, 90);
+        doc.text(`Ordinariness: ${userData.ordinariness}`, 30, 100);
+        
+        // Add event description
+        doc.text('Event Description:', 20, 120);
+        const splitText = doc.splitTextToSize(userData.eventDescription, 170);
+        doc.text(splitText, 20, 130);
+        
+        // Save the PDF
+        doc.save('LFIT_Reflector_Report.pdf');
     }
+
+    // Add event listener for the export button
+    document.getElementById('export-pdf-btn').addEventListener('click', generatePDF);
 });

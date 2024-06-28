@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const moment = require('moment');
 const bodyParser = require('body-parser');
+const readline = require('readline');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -47,20 +48,24 @@ app.post('/submit-data', (req, res) => {
 });
 
 // Route to get user data for the reporter
-app.get('/get-user-data/:userId', (req, res) => {
+app.get('/get-user-data/:userId', async (req, res) => {
     const userId = req.params.userId;
-    fs.readFile('user_data.jsonl', 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading data:', err);
-            res.status(500).json({ message: 'Error reading data' });
-        } else {
-            const lines = data.trim().split('\n');
-            const userData = lines
-                .map(line => JSON.parse(line))
-                .filter(entry => entry.userId === userId);
-            res.json(userData);
-        }
+    const userData = [];
+
+    const fileStream = fs.createReadStream('user_data.jsonl');
+    const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity
     });
+
+    for await (const line of rl) {
+        const data = JSON.parse(line);
+        if (data.userId === userId) {
+            userData.push(data);
+        }
+    }
+
+    res.json(userData);
 });
 
 // Error handling middleware
