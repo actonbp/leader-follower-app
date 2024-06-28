@@ -28,8 +28,8 @@ jobs:
       run: |
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
         ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} '
-          cd /path/to/your/app &&
+          cd /home/ec2-user/leader-follower-app &&
           git pull origin main &&
           npm install &&
-          pm2 restart your-app-name
+          pm2 restart server
         '
