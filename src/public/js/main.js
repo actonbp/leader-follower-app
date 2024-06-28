@@ -110,28 +110,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        // Add title
-        doc.setFontSize(18);
+        // Add header
+        doc.setFillColor(220, 220, 220);
+        doc.rect(0, 0, 210, 20, 'F');
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
         doc.text('LFIT Reflector Report', 105, 15, { align: 'center' });
         
-        // Add user ID
+        // Add user ID and date
         doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
         doc.text(`User ID: ${userData.userId}`, 20, 30);
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 37);
         
         // Add Leader-Follower scores
-        doc.text(`Leader Score: ${userData.leaderPercent}%`, 20, 40);
-        doc.text(`Follower Score: ${userData.followerPercent}%`, 20, 50);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Identity Scores', 20, 50);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Leader Score: ${userData.leaderPercent}%`, 30, 57);
+        doc.text(`Follower Score: ${userData.followerPercent}%`, 30, 64);
         
         // Add event details
-        doc.text('Event Details:', 20, 70);
-        doc.text(`Novelty: ${userData.novelty}`, 30, 80);
-        doc.text(`Disruption: ${userData.disruption}`, 30, 90);
-        doc.text(`Ordinariness: ${userData.ordinariness}`, 30, 100);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Event Details', 20, 80);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Novelty: ${userData.novelty}`, 30, 87);
+        doc.text(`Disruption: ${userData.disruption}`, 30, 94);
+        doc.text(`Ordinariness: ${userData.ordinariness}`, 30, 101);
         
         // Add event description
-        doc.text('Event Description:', 20, 120);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Event Description', 20, 115);
+        doc.setFont('helvetica', 'normal');
         const splitText = doc.splitTextToSize(userData.eventDescription, 170);
-        doc.text(splitText, 20, 130);
+        doc.text(splitText, 30, 122);
+        
+        // Add footer
+        doc.setFontSize(10);
+        doc.text('Leader-Follower Identity Tracker (LFIT) - Confidential', 105, 285, { align: 'center' });
+        
+        // Add page number
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.text(`Page ${i} of ${pageCount}`, 105, 295, { align: 'center' });
+        }
         
         // Save the PDF
         doc.save('LFIT_Reflector_Report.pdf');
