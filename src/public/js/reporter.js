@@ -187,33 +187,66 @@ function generateReporterPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // Add title
-    doc.setFontSize(18);
+    // Add header
+    doc.setFillColor(220, 220, 220);
+    doc.rect(0, 0, 210, 20, 'F');
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
     doc.text('LFIT Reporter Summary', 105, 15, { align: 'center' });
     
-    // Add user ID
+    // Add user ID and date
     doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
     doc.text(`User ID: ${document.getElementById('reporter-user-id').value}`, 20, 30);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 37);
     
-    // Add charts
-    const charts = document.querySelectorAll('canvas');
-    let yOffset = 40;
-    charts.forEach((chart, index) => {
-        const imgData = chart.toDataURL('image/png');
-        doc.addImage(imgData, 'PNG', 10, yOffset, 190, 100);
-        yOffset += 110;
-        
-        if (index < charts.length - 1) {
-            doc.addPage();
-            yOffset = 10;
-        }
-    });
-    
-    // Add summaries
+    // Add Identity Trajectory Chart
     doc.addPage();
-    doc.text(document.getElementById('identity-summary').innerText, 10, 10);
-    doc.text(document.getElementById('switching-summary').innerText, 10, 40);
-    doc.text(document.getElementById('event-summary').innerText, 10, 70);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Leader-Follower Identity Trajectory', 105, 20, { align: 'center' });
+    const trajectoryChart = document.getElementById('identity-trajectory-chart');
+    doc.addImage(trajectoryChart.toDataURL('image/png'), 'PNG', 10, 30, 190, 100);
+    
+    // Add General Identity Summary
+    doc.addPage();
+    doc.setFont('helvetica', 'bold');
+    doc.text('General Identity and Equilibrium', 105, 20, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    const identitySummary = document.getElementById('identity-summary').innerText;
+    doc.text(identitySummary, 20, 40);
+    
+    // Add Liminality Meter
+    const liminalityMeter = document.getElementById('liminality-meter');
+    doc.addImage(liminalityMeter.toDataURL('image/png'), 'PNG', 20, 80, 170, 20);
+    
+    // Add Day-to-Day Dynamics
+    doc.addPage();
+    doc.setFont('helvetica', 'bold');
+    doc.text('Day-to-Day Identity Dynamics', 105, 20, { align: 'center' });
+    const variationChart = document.getElementById('identity-variation-chart');
+    doc.addImage(variationChart.toDataURL('image/png'), 'PNG', 10, 30, 190, 100);
+    doc.setFont('helvetica', 'normal');
+    const switchingSummary = document.getElementById('switching-summary').innerText;
+    doc.text(switchingSummary, 20, 140);
+    
+    // Add Daily Events Summary
+    doc.addPage();
+    doc.setFont('helvetica', 'bold');
+    doc.text('Daily Events', 105, 20, { align: 'center' });
+    const eventChart = document.getElementById('event-strength-chart');
+    doc.addImage(eventChart.toDataURL('image/png'), 'PNG', 10, 30, 190, 100);
+    doc.setFont('helvetica', 'normal');
+    const eventSummary = document.getElementById('event-summary').innerText;
+    doc.text(eventSummary, 20, 140);
+    
+    // Add footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.text('Leader-Follower Identity Tracker (LFIT) - Confidential', 105, 285, { align: 'center' });
+        doc.text(`Page ${i} of ${pageCount}`, 105, 292, { align: 'center' });
+    }
     
     // Save the PDF
     doc.save('LFIT_Reporter_Summary.pdf');
