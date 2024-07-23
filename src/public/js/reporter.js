@@ -77,28 +77,41 @@ function createGeneralIdentitySummary(data) {
     const avgFollower = data.reduce((sum, d) => sum + parseFloat(d.followerScore), 0) / data.length;
     const liminality = Math.abs(avgLeader - avgFollower);
 
-    const summary = document.getElementById('identity-summary');
-    summary.innerHTML = `
-        <p>Average Leader Identity: ${avgLeader.toFixed(2)}%</p>
-        <p>Average Follower Identity: ${avgFollower.toFixed(2)}%</p>
-        <p>Leader-Follower Identity Liminality: ${liminality.toFixed(2)}%</p>
-    `;
-
-    // Create a simple liminality meter
-    const liminalityMeter = document.getElementById('liminality-meter');
-    liminalityMeter.innerHTML = `
-        <div style="width: 100%; background-color: #ddd;">
-            <div style="width: ${liminality}%; height: 20px; background-color: #4CAF50;"></div>
-        </div>
-    `;
+    const ctx = document.getElementById('general-identity-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Leader Identity', 'Follower Identity', 'Liminality'],
+            datasets: [{
+                label: 'Percentage',
+                data: [avgLeader, avgFollower, liminality],
+                backgroundColor: ['blue', 'red', 'green']
+            }]
+        },
+        options: {
+            responsive: true,
+            title: {
+                display: true,
+                text: 'General Identity and Equilibrium'
+            },
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }]
+            }
+        }
+    });
 }
 
 function createDayToDayDynamics(data) {
-    const variations = data.map((d, i, arr) => {
-        if (i === 0) return 0;
-        const prevDay = arr[i - 1];
-        return Math.abs(d.leaderScore - prevDay.leaderScore) + Math.abs(d.followerScore - prevDay.followerScore);
-    });
+    const leaderVariations = data.map((d, i, arr) => i === 0 ? 0 : Math.abs(d.leaderScore - arr[i - 1].leaderScore));
+    const followerVariations = data.map((d, i, arr) => i === 0 ? 0 : Math.abs(d.followerScore - arr[i - 1].followerScore));
+
+    const leaderSwitches = leaderVariations.filter(v => v > 20).length;
+    const followerSwitches = followerVariations.filter(v => v > 20).length;
 
     const ctx = document.getElementById('identity-variation-chart').getContext('2d');
     new Chart(ctx, {
@@ -106,9 +119,13 @@ function createDayToDayDynamics(data) {
         data: {
             labels: data.map(d => d.submitTime),
             datasets: [{
-                label: 'Identity Variation',
-                data: variations,
-                backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                label: 'Leader Identity Variation',
+                data: leaderVariations,
+                backgroundColor: 'blue'
+            }, {
+                label: 'Follower Identity Variation',
+                data: followerVariations,
+                backgroundColor: 'red'
             }]
         },
         options: {
@@ -117,46 +134,61 @@ function createDayToDayDynamics(data) {
                 display: true,
                 text: 'Day-to-Day Identity Variation'
             },
-            animation: {
-                onComplete: function () {
-                    this.toBase64Image();
-                }
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }]
             }
         }
     });
 
-    const switchCount = variations.filter(v => v > 20).length; // Assuming a switch is a variation > 20
-    const switchingSummary = document.getElementById('switching-summary');
-    switchingSummary.innerHTML = `
-        <p>Number of significant identity switches: ${switchCount}</p>
-    `;
-}
+    const totalEntries = data.length;
+    const leaderEntries = data.filter(d => parseFloat(d.leaderScore) > parseFloat(d.followerScore)).length;
+    const followerEntries = totalEntries - leaderEntries;
+    const liminalEntries = totalEntries - leaderEntries - followerEntries;
 
-function createDailyEventsSummary(data) {
-    const ctx = document.getElementById('event-strength-chart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
+    const pieCtx = document.getElementById('identity-pie-chart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'pie',
         data: {
-            labels: data.map(d => d.submitTime),
+            labels: ['Leader', 'Follower', 'Liminal'],
             datasets: [{
-                label: 'Novelty',
-                data: data.map(d => d.novelty),
-                backgroundColor: 'rgba(255, 99, 132, 0.6)'
-            }, {
-                label: 'Disruption',
-                data: data.map(d => d.disruption),
-                backgroundColor: 'rgba(54, 162, 235, 0.6)'
-            }, {
-                label: 'Ordinariness',
-                data: data.map(d => d.ordinariness),
-                backgroundColor: 'rgba(255, 206, 86, 0.6)'
+                data: [leaderEntries, followerEntries, liminalEntries],
+                backgroundColor: ['blue', 'red', 'green']
             }]
         },
         options: {
             responsive: true,
             title: {
                 display: true,
-                text: 'Daily Event Characteristics'
+                text: 'Proportion of Days in Each Identity'
+            }
+        }
+    });
+}
+
+function createDailyEventsSummary(data) {
+    const ctx = document.getElementById('event-strength-chart').getContext('2d');
+    const averageEventStrength = data.map(d => (parseFloat(d.novelty) + parseFloat(d.disruption) + parseFloat(d.ordinariness)) / 3);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => d.submitTime),
+            datasets: [{
+                label: 'Average Event Strength',
+                data: averageEventStrength,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)'
+            }]
+        },
+        options: {
+            responsive: true,
+            title: {
+                display: true,
+                text: 'Average Event Strength'
             },
             scales: {
                 yAxes: [{
@@ -165,21 +197,26 @@ function createDailyEventsSummary(data) {
                         max: 5
                     }
                 }]
-            },
-            animation: {
-                onComplete: function () {
-                    this.toBase64Image();
-                }
             }
         }
     });
 
     const eventSummary = document.getElementById('event-summary');
     eventSummary.innerHTML = `
-        <p>Total number of events recorded: ${data.length}</p>
-        <p>Average event novelty: ${(data.reduce((sum, d) => sum + parseFloat(d.novelty), 0) / data.length).toFixed(2)}</p>
-        <p>Average event disruption: ${(data.reduce((sum, d) => sum + parseFloat(d.disruption), 0) / data.length).toFixed(2)}</p>
-        <p>Average event ordinariness: ${(data.reduce((sum, d) => sum + parseFloat(d.ordinariness), 0) / data.length).toFixed(2)}</p>
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>Event Description</th>
+                <th>Event Strength</th>
+            </tr>
+            ${data.map(d => `
+                <tr>
+                    <td>${d.submitTime}</td>
+                    <td>${d.eventDescription}</td>
+                    <td>${((parseFloat(d.novelty) + parseFloat(d.disruption) + parseFloat(d.ordinariness)) / 3).toFixed(2)}</td>
+                </tr>
+            `).join('')}
+        </table>
     `;
 }
 
@@ -212,12 +249,8 @@ function generateReporterPDF() {
     doc.setFont('helvetica', 'bold');
     doc.text('General Identity and Equilibrium', 105, 20, { align: 'center' });
     doc.setFont('helvetica', 'normal');
-    const identitySummary = document.getElementById('identity-summary').innerText;
-    doc.text(identitySummary, 20, 40);
-    
-    // Add Liminality Meter
-    const liminalityMeter = document.getElementById('liminality-meter');
-    doc.addImage(liminalityMeter.toDataURL('image/png'), 'PNG', 20, 80, 170, 20);
+    const generalIdentityChart = document.getElementById('general-identity-chart');
+    doc.addImage(generalIdentityChart.toDataURL('image/png'), 'PNG', 20, 40, 170, 100);
     
     // Add Day-to-Day Dynamics
     doc.addPage();
@@ -226,13 +259,13 @@ function generateReporterPDF() {
     const variationChart = document.getElementById('identity-variation-chart');
     doc.addImage(variationChart.toDataURL('image/png'), 'PNG', 10, 30, 190, 100);
     doc.setFont('helvetica', 'normal');
-    const switchingSummary = document.getElementById('switching-summary').innerText;
-    doc.text(switchingSummary, 20, 140);
+    const pieChart = document.getElementById('identity-pie-chart');
+    doc.addImage(pieChart.toDataURL('image/png'), 'PNG', 20, 140, 170, 100);
     
     // Add Daily Events Summary
     doc.addPage();
     doc.setFont('helvetica', 'bold');
-    doc.text('Daily Events', 105, 20, { align: 'center' });
+    doc.text('Average Event Strength', 105, 20, { align: 'center' });
     const eventChart = document.getElementById('event-strength-chart');
     doc.addImage(eventChart.toDataURL('image/png'), 'PNG', 10, 30, 190, 100);
     doc.setFont('helvetica', 'normal');
