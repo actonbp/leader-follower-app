@@ -5,7 +5,17 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "nodemon server.js"
+        "dev": "nodemon server.js",
+        "screenshots": "node scripts/take-screenshots.js",
+        "capture-screens": "node scripts/capture-app-screens.js",
+        "simple-capture": "node scripts/simple-capture.js",
+        "ssh-capture": "node scripts/ssh-friendly-capture.js",
+        "html-capture": "node scripts/html-capture.js",
+        "terminal-capture": "node scripts/terminal-capture.js",
+        "ai-capture": "node scripts/ai-capture.js",
+        "vercel-login": "./scripts/deploy-vercel.sh login",
+        "vercel-deploy": "./scripts/deploy-vercel.sh deploy",
+        "vercel-prod": "./scripts/deploy-vercel.sh prod"
     },
     "dependencies": {
         "body-parser": "^1.19.0",
@@ -16,6 +26,10 @@
         "nodemailer": "^6.9.14"
     },
     "devDependencies": {
-        "nodemon": "^2.0.15"
+        "nodemon": "^2.0.15",
+        "puppeteer": "^24.4.0"
+    },
+    "engines": {
+        "node": ">=14.0.0"
     }
 }

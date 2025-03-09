@@ -1,0 +1,25 @@
+# Development and testing
+node_modules
+.git
+.github
+tests
+scripts
+
+# Screenshots and captures
+screenshots
+ai_captures
+terminal_captures
+html_snapshots
+
+# Local environment files
+.env
+.env.local
+.DS_Store
+
+# Documentation
+README.md
+LICENSE
+
+# Security
+*.pem
+*.key

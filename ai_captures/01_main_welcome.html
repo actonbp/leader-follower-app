@@ -1,0 +1,218 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leader-Follower Identity Tracker (LFIT)</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/flatly/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@3.0.0/build/Chart.BoxPlot.min.js"></script>
+    <script type="module" src="/js/main.js"></script>
+    <script type="module" src="/js/reporter.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div id="main-welcome-page" class="page text-center mt-5">
+            <h1 class="mb-4">Welcome to the Leader-Follower Identity Tracker (LFIT)</h1>
+            <div class="option-buttons d-flex justify-content-center mb-4">
+                <button id="reflector-btn" class="btn btn-primary mx-2">LFIT-Reflector</button>
+                <button id="reporter-btn" class="btn btn-primary mx-2">LFIT-Reporter</button>
+            </div>
+            <img src="/images/start_here.png" alt="Start Here" class="start-here-image">
+        </div>
+
+        <div id="reflector-section" class="container mt-5" style="display: none;">
+            <div id="welcome-page" class="page">
+                <h2>LFIT-Reflector</h2>
+                <p>Please enter your unique 6-digit ID to begin. This ID allows us to connect your reflections across days for your results report.</p>
+                <p>Here's how to create your unique ID (e.g., SM25EN):</p>
+                <ul>
+                    <li>First two characters of your maiden name (e.g., Smith --&gt; SM)</li>
+                    <li>Two digits of your birthdate (e.g., 25th May --&gt; 25)</li>
+                    <li>Final two characters of the place you were born (e.g., Copenhagen --&gt; EN)</li>
+                </ul>
+                <input type="text" id="user-id" class="form-control mb-3" placeholder="Enter your 6-digit ID">
+                <button id="start-btn" class="btn btn-success">Start</button>
+            </div>
+
+            <div id="instructions-page" class="page" style="display: none;">
+                <h2>Use the LFIT to Explore the Complex Dynamics between your Leader and Follower Identities</h2>
+                <p>Spend 3 minutes per day to gain insights into the changing nature of your leader and follower identities. Engage in the following short reflections at the end of each day and over a period of at least two consecutive weeks.</p>
+                <p>Both leadership and followership are not only roles or positions. They concern how you feel about the interactions with others. When answering the following questions, keep in mind that both leadership and followership are equally valuable.</p>
+                <button id="next-to-grid-btn" class="btn btn-success">Next</button>
+            </div>
+
+            <div id="grid-page" class="page" style="display: none;">
+                <h2>How did you feel about yourself today?</h2>
+                <p>How did you feel about yourself today. Did you consider yourself more of a follower, a leader, none or both?</p>
+                <p>Please click on the grid at the position that best represents how you considered yourself today. We are asking you to rate on both leader and follower simultaneously with a 'click'.</p>
+                <p>Today, I considered myself a ...</p>
+                <div class="grid-container">
+                    <div class="grid" id="grid">
+                        <div class="x-axis"></div>
+                        <div class="y-axis"></div>
+                    </div>
+                    <div class="label x-label">Follower</div>
+                    <div class="label y-label">Leader</div>
+                    <div class="scale bottom-left">Not at all</div>
+                    <div class="scale bottom-right">Very much so</div>
+                    <div class="scale top-left">Very much so</div>
+                    <div class="point" id="point"></div>
+                </div>
+                <button id="grid-submit-btn" class="btn btn-success mt-3" disabled="">Next</button>
+            </div>
+
+            <div id="event-reflection-page" class="page" style="display: none;">
+                <h2>Today's most important experience – your reflection</h2>
+                <p>Now please think about the most important event that happened to you during the day. Please describe the event you are thinking about in a few sentences.</p>
+                <textarea id="event-description" class="form-control mb-3" placeholder="Describe the event..."></textarea>
+                <button id="next-to-rating-btn" class="btn btn-success">Next</button>
+            </div>
+
+            <div id="event-rating-page" class="page" style="display: none;">
+                <h2>Today's most important experience – your rating</h2>
+                <p>Please rate this event you are thinking about on the following dimensions.</p>
+                <div class="rating-slider">
+                    <label for="novelty">Was the event familiar or new to you?</label>
+                    <input type="range" id="novelty" name="novelty" class="form-control-range mb-3" min="1" max="7" step="1" value="4">
+                    <span class="slider-value" id="novelty-value">4</span>
+                    <div class="d-flex justify-content-between">
+                        <span>1 (Familiar)</span>
+                        <span>7 (Novel)</span>
+                    </div>
+                </div>
+                <div class="rating-slider">
+                    <label for="disruption">Did the event disrupt your normal routine?</label>
+                    <input type="range" id="disruption" name="disruption" class="form-control-range mb-3" min="1" max="7" step="1" value="4">
+                    <span class="slider-value" id="disruption-value">4</span>
+                    <div class="d-flex justify-content-between">
+                        <span>1 (Not at all)</span>
+                        <span>7 (Highly disruptive)</span>
+                    </div>
+                </div>
+                <div class="rating-slider">
+                    <label for="ordinariness">Was it an ordinary or an extraordinary event?</label>
+                    <input type="range" id="ordinariness" name="ordinariness" class="form-control-range mb-3" min="1" max="7" step="1" value="4">
+                    <span class="slider-value" id="ordinariness-value">4</span>
+                    <div class="d-flex justify-content-between">
+                        <span>1 (Very ordinary)</span>
+                        <span>7 (Very extraordinary)</span>
+                    </div>
+                </div>
+                <button id="questions-submit-btn" class="btn btn-success">Submit</button>
+            </div>
+
+            <div id="completion-page" class="page" style="display: none;">
+                <h2>Thank you for today's short daily reflection.</h2>
+                <p>We recommend you to engage in the daily reflections for a minimum of two consecutive weeks. In that sense, see you again tomorrow 😊</p>
+                <button id="new-rating-btn" class="btn btn-success">Make Another Rating</button>
+                <button id="finish-btn" class="btn btn-success">Finish</button>
+            </div>
+
+            <div id="email-preferences" class="page" style="display: none;">
+                <h2>Email Reminder Preferences</h2>
+                <p>Would you like to receive daily email reminders?</p>
+                <input type="checkbox" id="email-reminders" name="email-reminders">
+                <label for="email-reminders">Yes, send me daily reminders</label>
+                <br>
+                <label for="reminder-time">Reminder Time (EST):</label>
+                <input type="time" id="reminder-time" name="reminder-time" value="20:00">
+                <br>
+                <input type="email" id="user-email" placeholder="Enter your email">
+                <p>We'll use this email to send you reminders and important updates about the study.</p>
+                <button id="save-email-preferences" class="btn btn-success">Save Preferences</button>
+            </div>
+        </div>
+
+        <div id="reporter-section" class="page" style="display: none;">
+            <h2>LFIT-Reporter</h2>
+            <p>Enter your ID to view your data:</p>
+            <input type="text" id="reporter-user-id" placeholder="Enter your ID">
+            <button id="load-data-btn" class="btn btn-success">Load Data</button>
+            <div id="reporter-content" style="display: none;">
+                <div class="tab">
+                    <button class="tablinks active" onclick="openTab(event, 'identity-tab')">Identity Information</button>
+                    <button class="tablinks" onclick="openTab(event, 'events-tab')">Events Information</button>
+                </div>
+                
+                <div id="identity-tab" class="tabcontent" style="display: block;">
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                        <canvas id="identity-trajectory-chart"></canvas>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                        <canvas id="identity-switches-chart"></canvas>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                        <canvas id="identity-switch-pie-chart"></canvas>
+                    </div>
+                    <div id="general-identity">
+                        <h3>Your General Leader and Follower Identity</h3>
+                        <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px;">
+                            <canvas id="general-identity-chart"></canvas>
+                        </div>
+                    </div>
+                    <div id="liminality-section" class="chart-container" style="position: relative; height: auto; width: 100%; max-width: 600px; margin-bottom: 20px;"></div>
+                    <div id="day-to-day-dynamics">
+                        <h3>Your Day-to-Day Identity Dynamics</h3>
+                        <p>This part shows how much your leader and follower identities varied from day to day, and how much you engaged in leader-follower identity switching.</p>
+                        <h4>How much did your leader and follower identities vary across days?</h4>
+                        <table id="identity-variability-table">
+                            <tbody><tr>
+                                <th>Leader identity variability</th>
+                                <th>Follower identity variability</th>
+                            </tr>
+                            <tr>
+                                <td id="leader-variability"></td>
+                                <td id="follower-variability"></td>
+                            </tr>
+                        </tbody></table>
+                        <div id="variability-interpretation">
+                            <p>Interpretation:</p>
+                            <ul>
+                                <li>0-10: Low variability</li>
+                                <li>10-20: Moderate variability</li>
+                                <li>&gt;20: High variability</li>
+                            </ul>
+                            <p>High variability means you felt very much like a leader on some days and not at all on others. Low variability means your feelings of being a leader or follower were more consistent.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="events-tab" class="tabcontent" style="display: none;">
+                    <div id="daily-events">
+                        <h3>Your Daily Events</h3>
+                        <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px;">
+                            <canvas id="event-strength-chart"></canvas>
+                        </div>
+                        <div id="event-summary"></div>
+                    </div>
+                </div>
+                <button id="export-reporter-pdf-btn" class="btn btn-success" style="display: none;">Export to PDF</button>
+                <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;">Generate PDF Report</button>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-content">
+                <img src="/images/book_screenshot.jpg" alt="Book Cover" class="book-image">
+                <div class="citation-text">
+                    <p id="citation">
+                        Nieberle, K. W., Acton, B. P., Fu, Y. A., Lord, R. G., &amp; Braun, S. (2024). Lead Today, Follow Tomorrow? How to Manage the Ebb and Flow of Leader and Follower Identities. In S. Braun, T. Hansbrough, G. A. Ruark, R. G. Lord, R. J. Hall &amp; O. Epitropaki (Eds.), Navigating Leadership: Evidence-Based Strategies for Leadership Development (pp. 9-35). Routledge. <a href="https://doi.org/10.4324/9781003377450" target="_blank">https://doi.org/10.4324/9781003377450</a>
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="/js/email-preferences.js"></script>
+    </div>
+
+
+
+</body></html>

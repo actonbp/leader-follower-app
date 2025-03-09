@@ -1,5 +1,24 @@
+# Dependencies
 node_modules/
-.DS_Store
+package-lock.json
+
+# Environment variables
 .env
+.env.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS generated files
+.DS_Store
+
+# Security
 *.pem
-npm-debug.log
+*.key
+
+# Optional: Uncomment to exclude screenshots
+# screenshots/
+# ai_captures/
+# terminal_captures/
