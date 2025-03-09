@@ -1,9 +1,12 @@
+// Import statements moved to the top of the file
+import { createIdentityTrajectoryChart, createGeneralIdentitySummary, createIdentitySwitchesChart, createDailyEventsSummary, createDayToDayDynamics, createIdentitySwitchesPieChart, addChartDescriptions, generateReporterPDF, addChartDescription, openTab } from './reporter.js';
+
 document.addEventListener('DOMContentLoaded', () => {
-    const pages = ['welcome-page', 'grid-page', 'questions-page', 'completion-page'];
+    const pages = ['welcome-page', 'instructions-page', 'grid-page', 'event-reflection-page', 'event-rating-page', 'completion-page'];
     let currentPage = 0;
     let userData = {};
 
-    function showPage(pageId) {
+    window.showPage = function (pageId) {
         document.querySelectorAll('.page').forEach(page => {
             page.style.display = 'none';
         });
@@ -25,18 +28,37 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('reporter-btn').addEventListener('click', () => {
         document.getElementById('main-welcome-page').style.display = 'none';
         showPage('reporter-section');
+        // Clear previous data and reset UI
+        document.getElementById('reporter-content').style.display = 'none';
+        document.getElementById('reporter-user-id').value = '';
     });
 
     // Reflector Section
     document.getElementById('start-btn').addEventListener('click', () => {
         const userId = document.getElementById('user-id').value;
         if (userId) {
-            userData.userId = userId;
-            userData.startTime = new Date().toISOString();
-            showPage('grid-page');
+            fetch(`/check-user/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.isNewUser || !data.hasEmail) {
+                        showPage('email-preferences');
+                    } else {
+                        userData.userId = userId;
+                        userData.startTime = new Date().toISOString();
+                        showPage('instructions-page');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was an error checking user status. Please try again.');
+                });
         } else {
             alert('Please enter your ID');
         }
+    });
+
+    document.getElementById('next-to-grid-btn').addEventListener('click', () => {
+        showPage('grid-page');
     });
 
     const grid = document.getElementById('grid');
@@ -62,14 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     gridSubmitBtn.addEventListener('click', () => {
-        showPage('questions-page');
+        showPage('event-reflection-page');
+    });
+
+    document.getElementById('next-to-rating-btn').addEventListener('click', () => {
+        userData.eventDescription = document.getElementById('event-description').value;
+        showPage('event-rating-page');
     });
 
     document.getElementById('questions-submit-btn').addEventListener('click', () => {
         userData.novelty = document.getElementById('novelty').value;
         userData.disruption = document.getElementById('disruption').value;
         userData.ordinariness = document.getElementById('ordinariness').value;
-        userData.eventDescription = document.getElementById('event-description').value;
 
         fetch('/submit-data', {
             method: 'POST',
@@ -78,16 +104,29 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify(userData),
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Success:', data);
-            showCompletionPage();
-            // Make sure userData is up-to-date here
-            userData = data; // Update userData with the latest submission data
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            alert('There was an error submitting your data. Please try again.');
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success:', data);
+                showPage('completion-page');
+                userData = data; // Update userData with the latest submission data
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert(`There was an error submitting your data: ${error.message}. Please try again.`);
+            });
+    });
+
+    // Add event listeners for range inputs
+    ['novelty', 'disruption', 'ordinariness'].forEach(id => {
+        const input = document.getElementById(id);
+        const valueSpan = document.getElementById(`${id}-value`);
+        input.addEventListener('input', () => {
+            valueSpan.textContent = input.value;
         });
     });
 
@@ -106,30 +145,30 @@ document.addEventListener('DOMContentLoaded', () => {
         userData = {};
     });
 
-    function generatePDF() {
+    function generateReflectorPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
+
         // Add header
         doc.setFillColor(220, 220, 220);
         doc.rect(0, 0, 210, 20, 'F');
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.text('LFIT Reflector Report', 105, 15, { align: 'center' });
-        
+
         // Add user ID and date
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
         doc.text(`User ID: ${userData.userId}`, 20, 30);
         doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 37);
-        
+
         // Add Leader-Follower scores
         doc.setFont('helvetica', 'bold');
         doc.text('Identity Scores', 20, 50);
         doc.setFont('helvetica', 'normal');
         doc.text(`Leader Score: ${userData.leaderPercent}%`, 30, 57);
         doc.text(`Follower Score: ${userData.followerPercent}%`, 30, 64);
-        
+
         // Add event details
         doc.setFont('helvetica', 'bold');
         doc.text('Event Details', 20, 80);
@@ -137,29 +176,133 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text(`Novelty: ${userData.novelty}`, 30, 87);
         doc.text(`Disruption: ${userData.disruption}`, 30, 94);
         doc.text(`Ordinariness: ${userData.ordinariness}`, 30, 101);
-        
+
         // Add event description
         doc.setFont('helvetica', 'bold');
         doc.text('Event Description', 20, 115);
         doc.setFont('helvetica', 'normal');
         const splitText = doc.splitTextToSize(userData.eventDescription, 170);
         doc.text(splitText, 30, 122);
-        
+
         // Add footer
         doc.setFontSize(10);
         doc.text('Leader-Follower Identity Tracker (LFIT) - Confidential', 105, 285, { align: 'center' });
-        
-        // Add page number
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.text(`Page ${i} of ${pageCount}`, 105, 295, { align: 'center' });
-        }
-        
+        doc.text(`Page 1 of 1`, 105, 292, { align: 'center' });
+
         // Save the PDF
         doc.save('LFIT_Reflector_Report.pdf');
     }
 
     // Add event listener for the export button
-    document.getElementById('export-pdf-btn').addEventListener('click', generatePDF);
+    if (document.getElementById('export-reflector-pdf-btn')) {
+        document.getElementById('export-reflector-pdf-btn').addEventListener('click', generateReflectorPDF);
+    }
+
+    document.getElementById('load-data-btn').addEventListener('click', loadReporterData);
+
+    function loadReporterData() {
+        const userId = document.getElementById('reporter-user-id').value;
+        if (userId) {
+            console.log('Fetching data for user:', userId);
+            fetch(`/get-user-data/${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Received data:', data);
+                    if (data && Array.isArray(data) && data.length > 0) {
+                        document.getElementById('reporter-content').style.display = 'block';
+                        createIdentityTrajectoryChart(data);
+                        createGeneralIdentitySummary(data);
+                        createIdentitySwitchesChart(data);
+                        createDailyEventsSummary(data);
+                        createDayToDayDynamics(data);
+                        createIdentitySwitchesPieChart(data);
+
+                        // Add a delay before adding chart descriptions
+                        setTimeout(() => {
+                            addChartDescriptions();
+                        }, 500);
+
+                        // Hide the load data button and show the generate PDF button
+                        document.getElementById('load-data-btn').style.display = 'none';
+                        const generatePdfBtn = document.getElementById('generate-pdf-btn');
+                        if (generatePdfBtn) {
+                            generatePdfBtn.addEventListener('click', generateReporterPDF);
+                        } else {
+                            console.error('Generate PDF button not found');
+                        }
+                    } else {
+                        throw new Error('No data found for this user ID.');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error loading data:', error);
+                    alert(`Error loading data: ${error.message}. Please try again.`);
+                    document.getElementById('reporter-content').style.display = 'none';
+                });
+        } else {
+            alert('Please enter your ID');
+        }
+    }
+
+    function addChartDescriptions() {
+        addChartDescription('identity-switch-pie-chart', 'This pie chart shows the proportion of days you identified more strongly as a leader, follower, or were in a liminal state (balanced between the two).');
+        addChartDescription('identity-trajectory-chart', 'This chart shows how your leader and follower identities have changed over time. Higher values indicate a stronger identification with that role.');
+        addChartDescription('general-identity-chart', 'This box plot displays the distribution of your leader and follower identity scores. The box represents the middle 50% of scores, with the line inside showing the median. The diamond marker shows the mean. The whiskers extend to the minimum and maximum scores.');
+        addChartDescription('identity-switches-chart', 'This chart shows the number of times your dominant identity switched between leader and follower.');
+        addChartDescription('event-strength-chart', 'This chart displays the average strength of daily events you experienced. Higher values indicate more impactful events that may have influenced your leader-follower identity.');
+    }
+
+    function calculateLiminality(data) {
+        let liminalPeriods = 0;
+        let totalPeriods = data.length - 1;
+        
+        for (let i = 1; i < data.length; i++) {
+            let prevLeader = data[i-1].leaderIdentity;
+            let prevFollower = data[i-1].followerIdentity;
+            let currLeader = data[i].leaderIdentity;
+            let currFollower = data[i].followerIdentity;
+            
+            if (Math.abs(currLeader - currFollower) <= 1 && Math.abs(prevLeader - prevFollower) <= 1) {
+                liminalPeriods++;
+            }
+        }
+        
+        return (liminalPeriods / totalPeriods) * 100;
+    }
+
+    function displayLiminalityInfo(data) {
+        const liminalityScore = calculateLiminality(data);
+        const liminalityText = `
+            <h3>Identity Liminality</h3>
+            <p>Identity liminality represents periods where leader and follower identities appear in a transitional or threshold state. This occurs when the difference between leader and follower identity scores is small (1 or less) for consecutive time points.</p>
+            <p>Your liminality score: ${liminalityScore.toFixed(2)}%</p>
+            <p>Interpretation:</p>
+            <ul>
+                <li>0-20%: Low liminality - Your leader and follower identities are usually distinct.</li>
+                <li>21-40%: Moderate liminality - You experience some periods of identity transition.</li>
+                <li>41-60%: High liminality - Your identities are often in a state of flux.</li>
+                <li>61-100%: Very high liminality - Your leader and follower identities are frequently intertwined.</li>
+            </ul>
+        `;
+        document.getElementById('liminality-section').innerHTML = liminalityText;
+    }
+
+    window.openTab = function(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    };
 });
