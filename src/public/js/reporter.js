@@ -96,17 +96,7 @@ export function createGeneralIdentitySummary(data) {
         
         const ctx = canvas.getContext('2d');
         
-        // Extract identity scores
-        const leaderScores = data.map(item => parseFloat(item.leaderScore));
-        const followerScores = data.map(item => parseFloat(item.followerScore));
-        
-        // Calculate statistics
-        const leaderMean = calculateMean(leaderScores);
-        const followerMean = calculateMean(followerScores);
-        const leaderStdDev = calculateStdDev(leaderScores, leaderMean);
-        const followerStdDev = calculateStdDev(followerScores, followerMean);
-        
-        // Check if Chart.js and BoxPlot plugin are available
+        // Check if Chart.js is available
         if (typeof Chart === 'undefined') {
             console.error('Chart.js is not loaded');
             return;
@@ -117,109 +107,17 @@ export function createGeneralIdentitySummary(data) {
             window.generalIdentityChart.destroy();
         }
         
-        // Create box plot data
-        const leaderBoxPlotData = {
-            min: Math.max(0, Math.min(...leaderScores)),
-            q1: calculateQuantile(leaderScores, 0.25),
-            median: calculateQuantile(leaderScores, 0.5),
-            q3: calculateQuantile(leaderScores, 0.75),
-            max: Math.max(...leaderScores),
-            outliers: []
-        };
+        // Extract leader and follower scores
+        const leaderScores = data.map(item => parseFloat(item.leaderScore));
+        const followerScores = data.map(item => parseFloat(item.followerScore));
         
-        const followerBoxPlotData = {
-            min: Math.max(0, Math.min(...followerScores)),
-            q1: calculateQuantile(followerScores, 0.25),
-            median: calculateQuantile(followerScores, 0.5),
-            q3: calculateQuantile(followerScores, 0.75),
-            max: Math.max(...followerScores),
-            outliers: []
-        };
+        // Calculate mean and standard deviation
+        const leaderMean = calculateMean(leaderScores);
+        const followerMean = calculateMean(followerScores);
+        const leaderStdDev = calculateStdDev(leaderScores, leaderMean);
+        const followerStdDev = calculateStdDev(followerScores, followerMean);
         
-        // Create the chart
-        try {
-            window.generalIdentityChart = new Chart(ctx, {
-                type: 'boxplot',
-                data: {
-                    labels: ['Leader Identity', 'Follower Identity'],
-                    datasets: [{
-                        label: 'Identity Distribution',
-                        backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)'],
-                        borderColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'],
-                        borderWidth: 1,
-                        data: [leaderBoxPlotData, followerBoxPlotData],
-                        itemRadius: 0,
-                        itemStyle: 'circle',
-                        itemBackgroundColor: '#000',
-                        meanBackgroundColor: ['rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)'],
-                        meanStyle: 'diamond',
-                        meanRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            min: 0,
-                            max: 100,
-                            title: {
-                                display: true,
-                                text: 'Identity Strength (%)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Distribution of Leader and Follower Identity Scores'
-                        },
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        } catch (chartError) {
-            console.error('Error creating box plot chart:', chartError);
-            
-            // Fallback to a simple bar chart if box plot fails
-            window.generalIdentityChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Leader Identity', 'Follower Identity'],
-                    datasets: [{
-                        label: 'Mean Identity Score',
-                        data: [leaderMean, followerMean],
-                        backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)'],
-                        borderColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            min: 0,
-                            max: 100,
-                            title: {
-                                display: true,
-                                text: 'Identity Strength (%)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Mean Leader and Follower Identity Scores'
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Display mean and standard deviation
+        // Display the variability in the table
         const leaderVariabilityElement = document.getElementById('leader-variability');
         const followerVariabilityElement = document.getElementById('follower-variability');
         
@@ -229,6 +127,139 @@ export function createGeneralIdentitySummary(data) {
         
         if (followerVariabilityElement) {
             followerVariabilityElement.textContent = followerStdDev.toFixed(2);
+        }
+        
+        // Create a simple bar chart instead of box plot due to compatibility issues
+        try {
+            window.generalIdentityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Leader Identity', 'Follower Identity'],
+                    datasets: [{
+                        label: 'Mean Score',
+                        data: [leaderMean, followerMean],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(255, 99, 132)',
+                            'rgb(54, 162, 235)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Identity Score'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Average Leader and Follower Identity Scores'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const index = context.dataIndex;
+                                    const stdDev = index === 0 ? leaderStdDev : followerStdDev;
+                                    return `Standard Deviation: ${stdDev.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Add error bars manually
+            const meta = window.generalIdentityChart.getDatasetMeta(0);
+            const errorBarColor = 'rgba(0, 0, 0, 0.5)';
+            const errorBarWidth = 10;
+            
+            window.generalIdentityChart.options.animation = false;
+            window.generalIdentityChart.update();
+            
+            const drawErrorBars = function() {
+                const ctx = window.generalIdentityChart.ctx;
+                ctx.save();
+                ctx.strokeStyle = errorBarColor;
+                ctx.lineWidth = 2;
+                
+                for (let i = 0; i < meta.data.length; i++) {
+                    const stdDev = i === 0 ? leaderStdDev : followerStdDev;
+                    const mean = i === 0 ? leaderMean : followerMean;
+                    
+                    const bar = meta.data[i];
+                    const x = bar.x;
+                    const yScale = window.generalIdentityChart.scales.y;
+                    
+                    const yTop = yScale.getPixelForValue(Math.min(mean + stdDev, 100));
+                    const yBottom = yScale.getPixelForValue(Math.max(mean - stdDev, 0));
+                    const yMean = yScale.getPixelForValue(mean);
+                    
+                    // Draw vertical line
+                    ctx.beginPath();
+                    ctx.moveTo(x, yTop);
+                    ctx.lineTo(x, yBottom);
+                    ctx.stroke();
+                    
+                    // Draw top cap
+                    ctx.beginPath();
+                    ctx.moveTo(x - errorBarWidth / 2, yTop);
+                    ctx.lineTo(x + errorBarWidth / 2, yTop);
+                    ctx.stroke();
+                    
+                    // Draw bottom cap
+                    ctx.beginPath();
+                    ctx.moveTo(x - errorBarWidth / 2, yBottom);
+                    ctx.lineTo(x + errorBarWidth / 2, yBottom);
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+            };
+            
+            // Add event listener to draw error bars after animation
+            window.generalIdentityChart.options.animation.onComplete = drawErrorBars;
+            window.generalIdentityChart.options.animation.onProgress = drawErrorBars;
+            window.generalIdentityChart.update();
+            
+        } catch (chartError) {
+            console.error('Error creating general identity chart:', chartError);
+            
+            // Create a fallback display
+            const container = canvas.parentElement;
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.innerHTML = `
+                <h4>General Identity Summary:</h4>
+                <table class="table">
+                    <tr>
+                        <th>Identity</th>
+                        <th>Mean Score</th>
+                        <th>Standard Deviation</th>
+                    </tr>
+                    <tr>
+                        <td>Leader</td>
+                        <td>${leaderMean.toFixed(2)}</td>
+                        <td>${leaderStdDev.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>Follower</td>
+                        <td>${followerMean.toFixed(2)}</td>
+                        <td>${followerStdDev.toFixed(2)}</td>
+                    </tr>
+                </table>
+            `;
+            container.appendChild(fallbackDiv);
         }
     } catch (error) {
         console.error('Error creating general identity summary:', error);

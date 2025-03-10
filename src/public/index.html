@@ -17,17 +17,49 @@
     <!-- Chart.js and plugins - specific versions for compatibility -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <!-- Use a specific version of BoxPlot plugin that's compatible with Chart.js 3.x -->
+    <script>
+        // Create a global shim for require to prevent errors
+        window.require = function(module) {
+            console.warn('Browser require() called for: ' + module);
+            return {}; // Return empty object to prevent errors
+        };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@3.0.0/build/Chart.BoxPlot.min.js"></script>
     
     <!-- PDF generation libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     
+    <!-- Loading indicator -->
+    <style>
+        #loading-indicator {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+    </style>
+    
     <!-- Main application script -->
     <script type="module" src="/js/main.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
+    <div id="loading-indicator">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p class="mt-2">Loading data and creating charts...</p>
+    </div>
+    
     <div class="container">
         <div id="main-welcome-page" class="page text-center mt-5">
             <h1 class="mb-4">Welcome to the Leader-Follower Identity Tracker (LFIT)</h1>
