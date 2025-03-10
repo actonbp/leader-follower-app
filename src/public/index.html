@@ -319,7 +319,25 @@
                 <br>
                 <input type="email" id="user-email" placeholder="Enter your email">
                 <p>We'll use this email to send you reminders and important updates about the study.</p>
-                <button id="save-email-preferences" class="btn btn-success">Save Preferences</button>
+                <div class="button-group mt-3">
+                    <button id="save-email-preferences" class="btn btn-success">Save Preferences</button>
+                    <button id="skip-email-btn" class="btn btn-secondary ml-2" onclick="skipEmailSetup()">Skip for Now</button>
+                </div>
+                
+                <script>
+                    function skipEmailSetup() {
+                        console.log('Skipping email setup');
+                        // Initialize userData with just the ID and timestamp
+                        const userId = document.getElementById('user-id').value;
+                        window.userData = window.userData || {};
+                        window.userData.userId = userId;
+                        window.userData.startTime = new Date().toISOString();
+                        
+                        // Skip directly to instructions
+                        document.getElementById('email-preferences').style.display = 'none';
+                        document.getElementById('instructions-page').style.display = 'block';
+                    }
+                </script>
             </div>
         </div>
 
