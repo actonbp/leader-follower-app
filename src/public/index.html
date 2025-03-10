@@ -345,60 +345,8 @@
             <h2>LFIT-Reporter</h2>
             <p>Enter your ID to view your data:</p>
             <input type="text" id="reporter-user-id" placeholder="Enter your ID">
-            <button id="load-data-btn" class="btn btn-success" onclick="loadReporterData()">Load Data</button>
+            <button id="load-data-btn" class="btn btn-success">Load Data</button>
             
-            <script>
-                function loadReporterData() {
-                    const userId = document.getElementById('reporter-user-id').value;
-                    if (!userId) {
-                        alert('Please enter your ID');
-                        return;
-                    }
-                    
-                    console.log('Loading data for user:', userId);
-                    fetch(`/get-user-data/${userId}`)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! status: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            console.log('Received data:', data);
-                            if (data && data.length > 0) {
-                                document.getElementById('reporter-content').style.display = 'block';
-                                document.getElementById('load-data-btn').style.display = 'none';
-                                document.getElementById('generate-pdf-btn').style.display = 'block';
-                                
-                                // Call the reporter functions - these are imported in main.js
-                                if (typeof createIdentityTrajectoryChart === 'function') {
-                                    createIdentityTrajectoryChart(data);
-                                    createGeneralIdentitySummary(data);
-                                    createIdentitySwitchesChart(data);
-                                    createDailyEventsSummary(data);
-                                    createDayToDayDynamics(data);
-                                    createIdentitySwitchesPieChart(data);
-                                    
-                                    // Add a delay before adding chart descriptions
-                                    setTimeout(() => {
-                                        if (typeof addChartDescriptions === 'function') {
-                                            addChartDescriptions();
-                                        }
-                                    }, 500);
-                                } else {
-                                    console.error('Reporter chart functions not found - make sure reporter.js is loaded');
-                                    alert('Error: Chart functions not loaded. Please refresh the page and try again.');
-                                }
-                            } else {
-                                throw new Error('No data found for this user ID or data is empty.');
-                            }
-                        })
-                        .catch((error) => {
-                            console.error('Error loading data:', error);
-                            alert(`Error loading data: ${error.message}. Please try again.`);
-                        });
-                }
-            </script>
             <div id="reporter-content" style="display: none;">
                 <div class="tab">
                     <button class="tablinks active" id="identity-tab-btn" onclick="openTab('identity-tab')">Identity Information</button>
@@ -426,22 +374,22 @@
                 </script>
                 
                 <div id="identity-tab" class="tabcontent">
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                    <div class="chart-container">
                         <canvas id="identity-trajectory-chart"></canvas>
                     </div>
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                    <div class="chart-container">
                         <canvas id="identity-switches-chart"></canvas>
                     </div>
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                    <div class="chart-container">
                         <canvas id="identity-switch-pie-chart"></canvas>
                     </div>
                     <div id="general-identity">
                         <h3>Your General Leader and Follower Identity</h3>
-                        <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px;">
+                        <div class="chart-container">
                             <canvas id="general-identity-chart"></canvas>
                         </div>
                     </div>
-                    <div id="liminality-section" class="chart-container" style="position: relative; height: auto; width: 100%; max-width: 600px; margin-bottom: 20px;"></div>
+                    <div id="liminality-section" class="chart-container"></div>
                     <div id="day-to-day-dynamics">
                         <h3>Your Day-to-Day Identity Dynamics</h3>
                         <p>This part shows how much your leader and follower identities varied from day to day, and how much you engaged in leader-follower identity switching.</p>
@@ -471,7 +419,7 @@
                 <div id="events-tab" class="tabcontent" style="display: none;">
                     <div id="daily-events">
                         <h3>Your Daily Events</h3>
-                        <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px;">
+                        <div class="chart-container">
                             <canvas id="event-strength-chart"></canvas>
                         </div>
                         <div id="event-summary"></div>
