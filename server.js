@@ -105,6 +105,11 @@ app.post('/register', (req, res) => {
 app.post('/set-email-preferences', async (req, res) => {
     const { userId, wantsReminders, userEmail, reminderTime } = req.body;
     try {
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
+        }
+        
+        // Save preferences
         let preferences;
         try {
             preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
@@ -119,45 +124,12 @@ app.post('/set-email-preferences', async (req, res) => {
         preferences[userId] = { wantsReminders, userEmail, reminderTime };
         await fs.writeFile('email_preferences.json', JSON.stringify(preferences));
 
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-
-        const welcomeEmailContent = `
-Dear LFIT Participant,
-
-Welcome to the Leader-Follower Identity Tracker (LFIT)! We're excited to have you on board.
-
-LFIT is designed to help you reflect on your daily experiences and how they shape your identity as a leader or follower. By participating in this study, you'll gain valuable insights into your own leadership development journey.
-
-Here's what you can expect:
-1. Daily reminders to complete a short reflection (if you've opted for them).
-2. A simple interface to record your experiences and feelings.
-3. Personalized reports to track your progress over time.
-
-Remember, consistency is key. We recommend completing the reflection for at least two consecutive weeks to see meaningful patterns in your leader-follower identity dynamics.
-
-If you have any questions or need assistance, please don't hesitate to reach out to our support team.
-
-Thank you for your participation, and we look forward to accompanying you on this journey of self-discovery and growth!
-
-Best regards,
-The LFIT Team
-`;
-
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: userEmail,
-            subject: 'Welcome to the Leader-Follower Identity Tracker (LFIT)',
-            text: welcomeEmailContent
-        });
-
+        // Log email without actually sending (for demo purposes)
+        console.log('Would send welcome email to:', userEmail);
+        console.log('Email reminders:', wantsReminders ? 'Enabled' : 'Disabled');
+        console.log('Reminder time:', reminderTime);
+        
+        // Log the "sent" email
         let emailLogs;
         try {
             emailLogs = JSON.parse(await fs.readFile('email_logs.json', 'utf8'));
@@ -170,12 +142,16 @@ The LFIT Team
         }
 
         emailLogs[userId] = {
-            emailSent: true,
-            sentAt: new Date().toISOString()
+            emailSent: true, // Consider it sent for demo purposes
+            sentAt: new Date().toISOString(),
+            demo: true
         };
         await fs.writeFile('email_logs.json', JSON.stringify(emailLogs));
 
-        res.json({ message: 'Preferences saved successfully and welcome email sent' });
+        res.json({ 
+            message: 'Preferences saved successfully', 
+            note: 'Demo mode: No actual email sent'
+        });
     } catch (error) {
         console.error('Error:', error);
 
@@ -197,81 +173,62 @@ The LFIT Team
         };
         await fs.writeFile('email_logs.json', JSON.stringify(emailLogs));
 
-        res.status(500).json({ message: 'Error processing request' });
+        res.status(500).json({ 
+            message: 'Error saving preferences', 
+            error: error.message 
+        });
     }
 });
 
-// Function to send reminder emails
+// Function to send reminder emails (Demo mode - just logs to console)
 async function sendReminderEmails() {
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
-    });
-
+    console.log('DEMO MODE: Would send reminder emails to users with preferences');
+    
     try {
         const preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
         for (const [userId, { wantsReminders, userEmail }] of Object.entries(preferences)) {
             if (wantsReminders) {
-                await transporter.sendMail({
-                    from: process.env.EMAIL_USER,
-                    to: userEmail,
-                    subject: 'LFIT Daily Reminder',
-                    text: 'Remember to complete your daily LFIT reflection!'
-                });
+                console.log(`DEMO: Would send reminder email to ${userEmail}`);
             }
         }
     } catch (error) {
-        console.error('Error sending reminder emails:', error);
+        console.error('Error processing reminder emails:', error);
     }
 }
 
-// Schedule reminder emails for each user
+// Schedule reminder emails for each user (Demo mode)
 async function scheduleReminders() {
+    console.log('Setting up demo reminder schedules (no actual emails will be sent)');
+    
     try {
         const preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
         for (const [userId, { wantsReminders, userEmail, reminderTime }] of Object.entries(preferences)) {
             if (wantsReminders && reminderTime) {
                 const [hours, minutes] = reminderTime.split(':');
+                console.log(`DEMO: Would schedule reminder for ${userEmail} at ${hours}:${minutes}`);
+                
+                // In demo mode, we don't actually set up the cron job
+                // This avoids errors with missing email credentials
+                /*
                 cron.schedule(`${minutes} ${hours} * * *`, () => {
-                    // Call sendReminderEmails with a single email
-                    const transporter = nodemailer.createTransport({
-                        host: 'smtp.gmail.com',
-                        port: 465,
-                        secure: true,
-                        auth: {
-                            user: process.env.EMAIL_USER,
-                            pass: process.env.EMAIL_PASS
-                        }
-                    });
-                    
-                    transporter.sendMail({
-                        from: process.env.EMAIL_USER,
-                        to: userEmail,
-                        subject: 'LFIT Daily Reminder',
-                        text: 'Remember to complete your daily LFIT reflection!'
-                    }).catch(error => {
-                        console.error(`Error sending reminder to ${userEmail}:`, error);
-                    });
+                    console.log(`DEMO: Would send reminder email to ${userEmail}`);
                 }, {
                     timezone: 'America/New_York'
                 });
+                */
             }
         }
     } catch (error) {
-        console.error('Error scheduling reminders:', error);
+        console.error('Error processing reminder schedules:', error);
     }
 }
 
 // Call this function when the server starts
 scheduleReminders();
 
-// Also schedule it to run daily to pick up any new preferences
-cron.schedule('0 0 * * *', scheduleReminders);
+// Also schedule it to run daily to pick up any new preferences (in demo mode, just log)
+console.log('DEMO: Would schedule daily check for new preferences at midnight');
+// cron.schedule('0 0 * * *', scheduleReminders);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -282,15 +239,29 @@ app.use((err, req, res, next) => {
 app.get('/check-user/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        const preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
+        let preferences;
+        try {
+            preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                preferences = {};
+            } else {
+                throw error;
+            }
+        }
+        
         const userPreference = preferences[userId];
         res.json({
             isNewUser: !userPreference,
-            hasEmail: userPreference && userPreference.userEmail
+            hasEmail: userPreference && userPreference.userEmail,
+            demo: true
         });
     } catch (error) {
         console.error('Error checking user status:', error);
-        res.status(500).json({ message: 'Error checking user status' });
+        res.status(500).json({ 
+            message: 'Error checking user status',
+            error: error.message 
+        });
     }
 });
 
@@ -307,11 +278,29 @@ app.get('/check-email-status/:userId', async (req, res) => {
                 throw error;
             }
         }
-        const userEmailStatus = emailLogs[userId] || { emailSent: false, error: 'No email sent yet' };
-        res.json(userEmailStatus);
+        
+        // If there's no status yet, create a demo one
+        if (!emailLogs[userId]) {
+            emailLogs[userId] = { 
+                emailSent: true, 
+                sentAt: new Date().toISOString(),
+                demo: true
+            };
+            await fs.writeFile('email_logs.json', JSON.stringify(emailLogs));
+        }
+        
+        const userEmailStatus = emailLogs[userId];
+        res.json({
+            ...userEmailStatus,
+            demo: true,
+            message: 'Demo mode: Email functionality simulated'
+        });
     } catch (error) {
         console.error('Error checking email status:', error);
-        res.status(500).json({ message: 'Error checking email status' });
+        res.status(500).json({ 
+            message: 'Error checking email status',
+            error: error.message 
+        });
     }
 });
 

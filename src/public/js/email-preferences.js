@@ -28,9 +28,15 @@ function saveEmailPreferences() {
         return response.json();
     })
     .then(data => {
-        alert('Email preferences saved successfully');
-        checkEmailStatus(userId);
+        console.log('Email preferences response:', data);
         
+        if (data.note) {
+            alert(`Email preferences saved successfully. Note: ${data.note}`);
+        } else {
+            alert('Email preferences saved successfully');
+        }
+        
+        // Always move forward, even in demo mode
         // Make sure userData exists in both window and local scope
         if (typeof window.userData === 'undefined') {
             window.userData = {};
@@ -59,7 +65,12 @@ function checkEmailStatus(userId) {
     fetch(`/check-email-status/${userId}`)
         .then(response => response.json())
         .then(data => {
-            if (data.emailSent) {
+            console.log('Email status response:', data);
+            
+            if (data.demo) {
+                console.log('Demo mode email status received');
+                // Don't show any alerts for demo mode - it's handled in the main alert
+            } else if (data.emailSent) {
                 alert(`Welcome email sent successfully at ${data.sentAt}`);
             } else {
                 alert(`Email not sent. Error: ${data.error}`);
@@ -67,7 +78,8 @@ function checkEmailStatus(userId) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('There was an error checking the email status');
+            // Don't show alert - it's better to just silently fail this check
+            // since we're already showing the main success alert
         });
 }
 
