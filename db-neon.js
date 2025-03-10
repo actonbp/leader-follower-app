@@ -3,12 +3,14 @@ const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config();
 
 // Neon connection string - should be in environment variables
-const connectionString = process.env.NEON_DATABASE_URL;
+let connectionString = process.env.NEON_DATABASE_URL;
 
 // Connection validation and error handling
 if (!connectionString) {
   console.error('Missing NEON_DATABASE_URL environment variable');
-  process.exit(1);
+  // Instead of exiting, use a fallback or dummy connection string for Vercel 
+  // that will allow the app to load but show a better error message
+  connectionString = 'postgresql://dummy:dummy@dummy.neon.tech/dummy?sslmode=require';
 }
 
 // Throw a clearer error message if the connection string is incorrect
@@ -217,7 +219,10 @@ const connectToDatabase = async () => {
     return sequelize;
   } catch (error) {
     console.error('Unable to connect to the database:', error);
-    throw error;
+    console.error('Please verify your NEON_DATABASE_URL environment variable.');
+    console.error('Use npm run vercel-setup:neon to set it up for Vercel deployment.');
+    // We'll continue but functionality will be limited
+    return sequelize;
   }
 };
 
@@ -229,7 +234,8 @@ const initializeDatabase = async () => {
     console.log('Database synchronized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
-    throw error;
+    console.warn('App will continue but database functionality may be limited');
+    // Don't throw the error so the app can still load
   }
 };
 

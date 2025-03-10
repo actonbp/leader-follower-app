@@ -26,6 +26,9 @@ app.use(bodyParser.json());
     console.log('Database connected and initialized');
   } catch (error) {
     console.error('Database initialization failed:', error);
+    // Don't crash the server, just log the error
+    console.error('You may need to set the NEON_DATABASE_URL environment variable');
+    console.error('Run: npm run vercel-setup:neon');
   }
 })();
 
@@ -45,11 +48,11 @@ app.post('/submit-data', async (req, res) => {
       userId: data.userId,
       startTime: data.startTime,
       submitTime: timestamp,
-      leaderScore: data.leaderPercent,
-      followerScore: data.followerPercent,
-      novelty: data.novelty,
-      disruption: data.disruption,
-      ordinariness: data.ordinariness,
+      leaderScore: data.leaderPercent.toString(), // Store as string to match original format
+      followerScore: data.followerPercent.toString(), // Store as string to match original format
+      novelty: data.novelty ? data.novelty.toString() : null,
+      disruption: data.disruption ? data.disruption.toString() : null,
+      ordinariness: data.ordinariness ? data.ordinariness.toString() : null,
       eventDescription: data.eventDescription
     });
     
@@ -72,19 +75,53 @@ app.get('/get-user-data/:userId', async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    // Find all data for this user ID
-    const userData = await models.UserData.findAll({
-      where: { userId },
-      order: [['createdAt', 'ASC']]
-    });
+    try {
+      // Find all data for this user ID
+      const userData = await models.UserData.findAll({
+        where: { userId },
+        order: [['createdAt', 'ASC']]
+      });
 
-    if (userData.length === 0) {
-      console.log(`No data found for user ID: ${userId}`);
-    } else {
-      console.log(`Found ${userData.length} entries for user ID: ${userId}`);
+      if (userData.length === 0) {
+        console.log(`No data found for user ID: ${userId}`);
+      } else {
+        console.log(`Found ${userData.length} entries for user ID: ${userId}`);
+      }
+
+      res.json(userData);
+    } catch (dbError) {
+      console.error('Database query failed:', dbError);
+      
+      // Fallback to file-based data if database query fails
+      try {
+        const fileData = [];
+        try {
+          // Read data from jsonl file as fallback
+          const fileContent = await fs.readFile(path.join(__dirname, 'user_data.jsonl'), 'utf8');
+          const lines = fileContent.split('\n');
+          
+          for (const line of lines) {
+            if (line.trim() !== '') {
+              try {
+                const entry = JSON.parse(line);
+                if (entry.userId === userId) {
+                  fileData.push(entry);
+                }
+              } catch (parseError) {
+                console.error('Error parsing line:', line, parseError);
+              }
+            }
+          }
+        } catch (readError) {
+          console.log('No fallback file data available');
+        }
+        
+        console.log(`Fallback: Using file data with ${fileData.length} entries`);
+        res.json(fileData);
+      } catch (fileError) {
+        throw new Error(`Database error: ${dbError.message}, File fallback error: ${fileError.message}`);
+      }
     }
-
-    res.json(userData);
   } catch (error) {
     console.error('Error processing user data:', error);
     res.status(500).json({ 
@@ -189,12 +226,17 @@ async function sendReminderEmails() {
   console.log('DEMO MODE: Would send reminder emails to users with preferences');
   
   try {
-    const preferences = await models.EmailPreference.findAll({
-      where: { wantsReminders: true }
-    });
-    
-    for (const pref of preferences) {
-      console.log(`DEMO: Would send reminder email to ${pref.userEmail}`);
+    try {
+      const preferences = await models.EmailPreference.findAll({
+        where: { wantsReminders: true }
+      });
+      
+      for (const pref of preferences) {
+        console.log(`DEMO: Would send reminder email to ${pref.userEmail}`);
+      }
+    } catch (dbError) {
+      console.error('Database error when getting email preferences:', dbError);
+      console.log('Email functionality disabled due to database error');
     }
   } catch (error) {
     console.error('Error processing reminder emails:', error);
@@ -206,24 +248,45 @@ async function scheduleReminders() {
   console.log('Setting up demo reminder schedules (no actual emails will be sent)');
   
   try {
-    const preferences = await models.EmailPreference.findAll({
-      where: { wantsReminders: true }
-    });
-    
-    for (const pref of preferences) {
-      if (pref.reminderTime) {
-        const [hours, minutes] = pref.reminderTime.split(':');
-        console.log(`DEMO: Would schedule reminder for ${pref.userEmail} at ${hours}:${minutes}`);
+    try {
+      const preferences = await models.EmailPreference.findAll({
+        where: { wantsReminders: true }
+      });
+      
+      for (const pref of preferences) {
+        if (pref.reminderTime) {
+          const [hours, minutes] = pref.reminderTime.split(':');
+          console.log(`DEMO: Would schedule reminder for ${pref.userEmail} at ${hours}:${minutes}`);
+          
+          // In demo mode, we don't actually set up the cron job
+          // This avoids errors with missing email credentials
+          /*
+          cron.schedule(`${minutes} ${hours} * * *`, () => {
+            console.log(`DEMO: Would send reminder email to ${pref.userEmail}`);
+          }, {
+            timezone: 'America/New_York'
+          });
+          */
+        }
+      }
+    } catch (dbError) {
+      console.error('Database error when setting up schedules:', dbError);
+      console.log('Reminder scheduling disabled due to database error');
+      
+      // Try to load from file as fallback for demo purposes
+      try {
+        const fileContent = await fs.readFile('email_preferences.json', 'utf8');
+        const preferences = JSON.parse(fileContent);
+        console.log(`Fallback: Loaded ${Object.keys(preferences).length} preferences from file`);
         
-        // In demo mode, we don't actually set up the cron job
-        // This avoids errors with missing email credentials
-        /*
-        cron.schedule(`${minutes} ${hours} * * *`, () => {
-          console.log(`DEMO: Would send reminder email to ${pref.userEmail}`);
-        }, {
-          timezone: 'America/New_York'
-        });
-        */
+        for (const [userId, pref] of Object.entries(preferences)) {
+          if (pref.wantsReminders && pref.reminderTime) {
+            const [hours, minutes] = pref.reminderTime.split(':');
+            console.log(`DEMO (file fallback): Would schedule reminder for ${pref.userEmail} at ${hours}:${minutes}`);
+          }
+        }
+      } catch (fileError) {
+        console.log('No fallback preference file available');
       }
     }
   } catch (error) {
