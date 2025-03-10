@@ -105,10 +105,6 @@ const EmailPreference = sequelize.define('email_preference', {
   reminderTime: {
     type: DataTypes.STRING,
     allowNull: true
-  },
-  lastReminderSent: {
-    type: DataTypes.DATE,
-    allowNull: true
   }
 });
 

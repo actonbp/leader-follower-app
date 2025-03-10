@@ -40,7 +40,7 @@
         "sequelize": "^6.37.6"
     },
     "devDependencies": {
-        "nodemon": "^2.0.15",
+        "nodemon": "^3.1.9",
         "puppeteer": "^24.4.0"
     },
     "engines": {
