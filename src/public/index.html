@@ -71,14 +71,52 @@
                     <li>Final two characters of the place you were born (e.g., Copenhagen --> EN)</li>
                 </ul>
                 <input type="text" id="user-id" class="form-control mb-3" placeholder="Enter your 6-digit ID">
-                <button id="start-btn" class="btn btn-success">Start</button>
+                <button id="start-btn" class="btn btn-success" onclick="startReflectorProcess()">Start</button>
+                
+                <script>
+                    function startReflectorProcess() {
+                        const userId = document.getElementById('user-id').value;
+                        if (!userId) {
+                            alert('Please enter your ID');
+                            return;
+                        }
+                        
+                        console.log('Starting reflector process with ID:', userId);
+                        fetch(`/check-user/${userId}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.isNewUser || !data.hasEmail) {
+                                    document.getElementById('welcome-page').style.display = 'none';
+                                    document.getElementById('email-preferences').style.display = 'block';
+                                } else {
+                                    window.userData = window.userData || {};
+                                    window.userData.userId = userId;
+                                    window.userData.startTime = new Date().toISOString();
+                                    document.getElementById('welcome-page').style.display = 'none';
+                                    document.getElementById('instructions-page').style.display = 'block';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('There was an error checking user status. Please try again.');
+                            });
+                    }
+                </script>
             </div>
 
             <div id="instructions-page" class="page" style="display: none;">
                 <h2>Use the LFIT to Explore the Complex Dynamics between your Leader and Follower Identities</h2>
                 <p>Spend 3 minutes per day to gain insights into the changing nature of your leader and follower identities. Engage in the following short reflections at the end of each day and over a period of at least two consecutive weeks.</p>
                 <p>Both leadership and followership are not only roles or positions. They concern how you feel about the interactions with others. When answering the following questions, keep in mind that both leadership and followership are equally valuable.</p>
-                <button id="next-to-grid-btn" class="btn btn-success">Next</button>
+                <button id="next-to-grid-btn" class="btn btn-success" onclick="showGridPage()">Next</button>
+                
+                <script>
+                    function showGridPage() {
+                        console.log('Moving to grid page');
+                        document.getElementById('instructions-page').style.display = 'none';
+                        document.getElementById('grid-page').style.display = 'block';
+                    }
+                </script>
             </div>
 
             <div id="grid-page" class="page" style="display: none;">
@@ -98,14 +136,57 @@
                     <div class="scale top-left">Very much so</div>
                     <div class="point" id="point"></div>
                 </div>
-                <button id="grid-submit-btn" class="btn btn-success mt-3" disabled>Next</button>
+                <button id="grid-submit-btn" class="btn btn-success mt-3" onclick="submitGridAndContinue()" disabled>Next</button>
+                
+                <script>
+                    // Set up grid click handler
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const grid = document.getElementById('grid');
+                        const point = document.getElementById('point');
+                        const gridSubmitBtn = document.getElementById('grid-submit-btn');
+                        
+                        grid.addEventListener('click', function(e) {
+                            const rect = grid.getBoundingClientRect();
+                            let x = e.clientX - rect.left;
+                            let y = rect.bottom - e.clientY;
+                            
+                            x = Math.max(0, Math.min(x, rect.width));
+                            y = Math.max(0, Math.min(y, rect.height));
+                            
+                            window.userData = window.userData || {};
+                            window.userData.followerPercent = (x / rect.width * 100).toFixed(2);
+                            window.userData.leaderPercent = (y / rect.height * 100).toFixed(2);
+                            
+                            point.style.left = `${x}px`;
+                            point.style.top = `${rect.height - y}px`;
+                            point.style.display = 'block';
+                            
+                            gridSubmitBtn.disabled = false;
+                        });
+                    });
+                    
+                    function submitGridAndContinue() {
+                        console.log('Grid submitted, moving to event reflection');
+                        document.getElementById('grid-page').style.display = 'none';
+                        document.getElementById('event-reflection-page').style.display = 'block';
+                    }
+                </script>
             </div>
 
             <div id="event-reflection-page" class="page" style="display: none;">
                 <h2>Today's most important experience – your reflection</h2>
                 <p>Now please think about the most important event that happened to you during the day. Please describe the event you are thinking about in a few sentences.</p>
                 <textarea id="event-description" class="form-control mb-3" placeholder="Describe the event..."></textarea>
-                <button id="next-to-rating-btn" class="btn btn-success">Next</button>
+                <button id="next-to-rating-btn" class="btn btn-success" onclick="moveToEventRating()">Next</button>
+                
+                <script>
+                    function moveToEventRating() {
+                        window.userData = window.userData || {};
+                        window.userData.eventDescription = document.getElementById('event-description').value;
+                        document.getElementById('event-reflection-page').style.display = 'none';
+                        document.getElementById('event-rating-page').style.display = 'block';
+                    }
+                </script>
             </div>
 
             <div id="event-rating-page" class="page" style="display: none;">
@@ -138,14 +219,93 @@
                         <span>7 (Very extraordinary)</span>
                     </div>
                 </div>
-                <button id="questions-submit-btn" class="btn btn-success">Submit</button>
+                <button id="questions-submit-btn" class="btn btn-success" onclick="submitRatingsAndData()">Submit</button>
+                
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Set up event listeners for range inputs
+                        ['novelty', 'disruption', 'ordinariness'].forEach(id => {
+                            const input = document.getElementById(id);
+                            const valueSpan = document.getElementById(`${id}-value`);
+                            if (input && valueSpan) {
+                                input.addEventListener('input', () => {
+                                    valueSpan.textContent = input.value;
+                                });
+                            }
+                        });
+                    });
+                    
+                    function submitRatingsAndData() {
+                        window.userData = window.userData || {};
+                        window.userData.novelty = document.getElementById('novelty').value;
+                        window.userData.disruption = document.getElementById('disruption').value;
+                        window.userData.ordinariness = document.getElementById('ordinariness').value;
+                        
+                        console.log('Submitting user data:', window.userData);
+                        
+                        fetch('/submit-data', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(window.userData),
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Success:', data);
+                            document.getElementById('event-rating-page').style.display = 'none';
+                            document.getElementById('completion-page').style.display = 'block';
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                            alert(`There was an error submitting your data: ${error.message}. Please try again.`);
+                        });
+                    }
+                </script>
             </div>
 
             <div id="completion-page" class="page" style="display: none;">
                 <h2>Thank you for today's short daily reflection.</h2>
                 <p>We recommend you to engage in the daily reflections for a minimum of two consecutive weeks. In that sense, see you again tomorrow 😊</p>
-                <button id="new-rating-btn" class="btn btn-success">Make Another Rating</button>
-                <button id="finish-btn" class="btn btn-success">Finish</button>
+                <button id="new-rating-btn" class="btn btn-success" onclick="startNewRating()">Make Another Rating</button>
+                <button id="finish-btn" class="btn btn-success" onclick="finishAndReturnToMain()">Finish</button>
+                
+                <script>
+                    function startNewRating() {
+                        window.userData = window.userData ? { userId: window.userData.userId } : {};
+                        window.userData.startTime = new Date().toISOString();
+                        
+                        // Reset the grid point
+                        const point = document.getElementById('point');
+                        if (point) {
+                            point.style.display = 'none';
+                        }
+                        
+                        // Disable the submit button
+                        const gridSubmitBtn = document.getElementById('grid-submit-btn');
+                        if (gridSubmitBtn) {
+                            gridSubmitBtn.disabled = true;
+                        }
+                        
+                        // Show grid page for new rating
+                        document.getElementById('completion-page').style.display = 'none';
+                        document.getElementById('grid-page').style.display = 'block';
+                    }
+                    
+                    function finishAndReturnToMain() {
+                        console.log('Finishing session and returning to main page');
+                        document.getElementById('reflector-section').style.display = 'none';
+                        document.getElementById('main-welcome-page').style.display = 'block';
+                        
+                        // Reset user data
+                        window.userData = {};
+                    }
+                </script>
             </div>
 
             <div id="email-preferences" class="page" style="display: none;">
@@ -167,12 +327,85 @@
             <h2>LFIT-Reporter</h2>
             <p>Enter your ID to view your data:</p>
             <input type="text" id="reporter-user-id" placeholder="Enter your ID">
-            <button id="load-data-btn" class="btn btn-success">Load Data</button>
+            <button id="load-data-btn" class="btn btn-success" onclick="loadReporterData()">Load Data</button>
+            
+            <script>
+                function loadReporterData() {
+                    const userId = document.getElementById('reporter-user-id').value;
+                    if (!userId) {
+                        alert('Please enter your ID');
+                        return;
+                    }
+                    
+                    console.log('Loading data for user:', userId);
+                    fetch(`/get-user-data/${userId}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Received data:', data);
+                            if (data && data.length > 0) {
+                                document.getElementById('reporter-content').style.display = 'block';
+                                document.getElementById('load-data-btn').style.display = 'none';
+                                document.getElementById('generate-pdf-btn').style.display = 'block';
+                                
+                                // Call the reporter functions - these are imported in main.js
+                                if (typeof createIdentityTrajectoryChart === 'function') {
+                                    createIdentityTrajectoryChart(data);
+                                    createGeneralIdentitySummary(data);
+                                    createIdentitySwitchesChart(data);
+                                    createDailyEventsSummary(data);
+                                    createDayToDayDynamics(data);
+                                    createIdentitySwitchesPieChart(data);
+                                    
+                                    // Add a delay before adding chart descriptions
+                                    setTimeout(() => {
+                                        if (typeof addChartDescriptions === 'function') {
+                                            addChartDescriptions();
+                                        }
+                                    }, 500);
+                                } else {
+                                    console.error('Reporter chart functions not found - make sure reporter.js is loaded');
+                                    alert('Error: Chart functions not loaded. Please refresh the page and try again.');
+                                }
+                            } else {
+                                throw new Error('No data found for this user ID or data is empty.');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error loading data:', error);
+                            alert(`Error loading data: ${error.message}. Please try again.`);
+                        });
+                }
+            </script>
             <div id="reporter-content" style="display: none;">
                 <div class="tab">
-                    <button class="tablinks active" id="identity-tab-btn">Identity Information</button>
-                    <button class="tablinks" id="events-tab-btn">Events Information</button>
+                    <button class="tablinks active" id="identity-tab-btn" onclick="openTab('identity-tab')">Identity Information</button>
+                    <button class="tablinks" id="events-tab-btn" onclick="openTab('events-tab')">Events Information</button>
                 </div>
+                
+                <script>
+                    function openTab(tabId) {
+                        // Hide all tab content
+                        const tabcontent = document.getElementsByClassName("tabcontent");
+                        for (let i = 0; i < tabcontent.length; i++) {
+                            tabcontent[i].style.display = "none";
+                        }
+                        
+                        // Remove active class from all tab buttons
+                        const tablinks = document.getElementsByClassName("tablinks");
+                        for (let i = 0; i < tablinks.length; i++) {
+                            tablinks[i].className = tablinks[i].className.replace(" active", "");
+                        }
+                        
+                        // Show the selected tab and add active class to button
+                        document.getElementById(tabId).style.display = "block";
+                        event.currentTarget.className += " active";
+                    }
+                </script>
                 
                 <div id="identity-tab" class="tabcontent">
                     <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
@@ -226,7 +459,19 @@
                         <div id="event-summary"></div>
                     </div>
                 </div>
-                <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;">Generate PDF Report</button>
+                <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;" onclick="generatePDFReport()">Generate PDF Report</button>
+                
+                <script>
+                    function generatePDFReport() {
+                        console.log('Generating PDF report');
+                        if (typeof generateReporterPDF === 'function') {
+                            generateReporterPDF();
+                        } else {
+                            console.error('generateReporterPDF function not found');
+                            alert('Error: PDF generation function not available. Please refresh the page and try again.');
+                        }
+                    }
+                </script>
             </div>
         </div>
 
