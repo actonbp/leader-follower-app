@@ -1,37 +1,49 @@
 // Import statements moved to the top of the file
 import { createIdentityTrajectoryChart, createGeneralIdentitySummary, createIdentitySwitchesChart, createDailyEventsSummary, createDayToDayDynamics, createIdentitySwitchesPieChart, addChartDescriptions, generateReporterPDF, addChartDescription } from './reporter.js';
 
+// Define the showPage function in the global scope
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(page => {
+        page.style.display = 'none';
+    });
+    document.getElementById(pageId).style.display = 'block';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const pages = ['welcome-page', 'instructions-page', 'grid-page', 'event-reflection-page', 'event-rating-page', 'completion-page'];
     let currentPage = 0;
     let userData = {};
 
-    window.showPage = function (pageId) {
-        document.querySelectorAll('.page').forEach(page => {
-            page.style.display = 'none';
-        });
-        document.getElementById(pageId).style.display = 'block';
-    }
-
     function showCompletionPage() {
         showPage('completion-page');
-        document.getElementById('export-pdf-btn').style.display = 'inline-block';
     }
 
     // Main Welcome Page
-    document.getElementById('reflector-btn').addEventListener('click', () => {
-        document.getElementById('main-welcome-page').style.display = 'none';
-        document.getElementById('reflector-section').style.display = 'block';
-        showPage('welcome-page');
-    });
+    const reflectorBtn = document.getElementById('reflector-btn');
+    if (reflectorBtn) {
+        reflectorBtn.addEventListener('click', () => {
+            document.getElementById('main-welcome-page').style.display = 'none';
+            document.getElementById('reflector-section').style.display = 'block';
+            showPage('welcome-page');
+            console.log('Reflector button clicked');
+        });
+    } else {
+        console.error('Reflector button not found in DOM');
+    }
 
-    document.getElementById('reporter-btn').addEventListener('click', () => {
-        document.getElementById('main-welcome-page').style.display = 'none';
-        showPage('reporter-section');
-        // Clear previous data and reset UI
-        document.getElementById('reporter-content').style.display = 'none';
-        document.getElementById('reporter-user-id').value = '';
-    });
+    const reporterBtn = document.getElementById('reporter-btn');
+    if (reporterBtn) {
+        reporterBtn.addEventListener('click', () => {
+            document.getElementById('main-welcome-page').style.display = 'none';
+            showPage('reporter-section');
+            // Clear previous data and reset UI
+            document.getElementById('reporter-content').style.display = 'none';
+            document.getElementById('reporter-user-id').value = '';
+            console.log('Reporter button clicked');
+        });
+    } else {
+        console.error('Reporter button not found in DOM');
+    }
 
     // Reflector Section
     document.getElementById('start-btn').addEventListener('click', () => {
@@ -193,10 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.save('LFIT_Reflector_Report.pdf');
     }
 
-    // Add event listener for the export button
-    if (document.getElementById('export-reflector-pdf-btn')) {
-        document.getElementById('export-reflector-pdf-btn').addEventListener('click', generateReflectorPDF);
-    }
+    // Add event listener for the export button if it exists in the future
+    // Currently, there's no export-reflector-pdf-btn in the HTML
 
     // Reporter functionality
     const loadDataBtn = document.getElementById('load-data-btn');
