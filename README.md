@@ -71,7 +71,8 @@ leader-follower-app/
 ├── terminal_captures/      # Terminal-friendly HTML captures
 ├── config/                 # Configuration files
 ├── tests/                  # Test files
-├── server.js               # Main application entry point
+├── server-neon.js          # Main application entry point
+├── db-neon.js              # Database connection and models
 ├── package.json            # Project dependencies and scripts
 └── .env                    # Environment variables
 ```
@@ -93,6 +94,7 @@ leader-follower-app/
    ```
    EMAIL_USER=your-email@example.com
    EMAIL_PASS=your-email-password
+   NEON_DATABASE_URL=your-neon-postgresql-connection-string
    PORT=3000
    ```
 
@@ -103,13 +105,13 @@ leader-follower-app/
 Start the application in development mode with auto-reloading:
 
 ```bash
-npm run dev
+npm run dev:neon
 ```
 
 Or start without auto-reloading:
 
 ```bash
-npm start
+npm run start:neon
 ```
 
 The application will be available at http://localhost:3000
@@ -130,14 +132,19 @@ This application is configured for easy deployment to Vercel:
    vercel login
    ```
 
-3. Deploy the application:
+3. Set up environment variables:
    ```bash
-   vercel
+   npm run vercel-setup:neon
    ```
 
-4. For production deployment:
+4. Deploy the application:
    ```bash
-   vercel --prod
+   npm run vercel-deploy:neon
+   ```
+
+5. For production deployment:
+   ```bash
+   npm run vercel-prod:neon
    ```
 
 Alternatively, you can deploy directly from the Vercel dashboard:
@@ -150,7 +157,7 @@ Alternatively, you can deploy directly from the Vercel dashboard:
    - Build Command: None (leave empty)
    - Output Directory: None (leave empty)
    - Install Command: `npm install`
-   - Development Command: `npm run dev`
+   - Development Command: `npm run dev:neon`
 5. Add environment variables from your `.env` file
 6. Click "Deploy"
 
@@ -205,7 +212,7 @@ chmod +x scripts/ssh-helper.sh
    ```
 3. Start the application:
    ```bash
-   npm run dev
+   npm run dev:neon
    ```
 
 ### Capturing Screenshots Remotely
@@ -218,7 +225,7 @@ To capture screenshots and HTML for AI analysis:
 
 ```bash
 # Start the application in the background
-npm run dev &
+npm run dev:neon &
 
 # Capture screenshots and HTML for AI analysis
 npm run ai-capture
@@ -253,7 +260,7 @@ If you're an AI agent exploring this codebase to make changes, here's where to s
 ### Key Files and Directories
 
 1. **App Structure:**
-   - `server.js` - Main Express server entry point
+   - `server-neon.js` - Main Express server entry point
    - `src/app.js` - Core application logic
    - `src/public/index.html` - Main HTML template
    - `src/public/css/styles.css` - Styles (recently updated for mobile responsiveness)
@@ -272,66 +279,7 @@ If you're an AI agent exploring this codebase to make changes, here's where to s
    - Review `ai_captures/AI_SUMMARY.md` for an overview
    - Use `npm run ai-capture` to generate fresh captures
 
-### Common Modification Tasks
-
-1. **UI Modifications:**
-   - Update `src/public/css/styles.css` for styling changes
-   - Modify `src/public/index.html` for layout changes
-   - Frontend interaction logic in `src/public/js/main.js`
-
-2. **Data Visualization:**
-   - Chart configurations in `src/public/js/reporter.js`
-   - New visualization types can be added here
-
-3. **Backend Logic:**
-   - API endpoints in `src/routes/index.js`
-   - Data processing in `server.js`
-
-4. **Email Functionality:**
-   - Email configuration in `config/config.js`
-   - Email template changes in the relevant routes
-
-### Data Model
-
-The app stores two main types of data:
-
-1. **User Reflection Data** (`user_data.jsonl`)
-   - Format: JSON Lines (each line is a separate JSON object)
-   - Each entry represents one daily reflection with:
-     ```json
-     {
-       "userId": "USER01",
-       "timestamp": "2023-07-15T14:30:00.000Z",
-       "leaderIdentity": 85,        // 0-100 scale
-       "followerIdentity": 55,      // 0-100 scale
-       "event": {
-         "description": "Team meeting where I presented ideas",
-         "novelty": 4,              // 1-7 scale
-         "disruption": 3,           // 1-7 scale
-         "ordinariness": 2          // 1-7 scale
-       }
-     }
-     ```
-
-2. **Email Preferences** (`email_preferences.json`)
-   - Format: JSON with user email settings
-   - Structure:
-     ```json
-     {
-       "USER01": {
-         "email": "user@example.com",
-         "sendReminders": true,
-         "reminderTime": "20:00"
-       }
-     }
-     ```
-
-### Exploratory Process
-
-If you need to understand this app:
-1. First, examine the main HTML structure in `src/public/index.html`
-2. Look at `src/public/js/main.js` to understand the app flow
-3. See `server.js` and related route files for backend processing
+3. See `server-neon.js` and related route files for backend processing
 4. Run `npm run ai-capture` to see the app's visual interface
 
 ### Common AI Tasks

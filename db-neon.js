@@ -1,45 +1,40 @@
-// db-neon.js - PostgreSQL connection utility using Sequelize
+// db-neon.js - PostgreSQL connection utility optimized for serverless environments
 const { Sequelize, DataTypes } = require('sequelize');
+const { Pool } = require('pg');
+const { parse } = require('pg-connection-string');
 require('dotenv').config();
 
-// Neon connection string - should be in environment variables
-// Check for environment-specific connection strings first
-let connectionString = process.env.NEON_DATABASE_URL;
-
-// For development environments, use the dev connection string if available
-if (process.env.NODE_ENV === 'development' && process.env.NEON_DATABASE_URL_DEV) {
-  connectionString = process.env.NEON_DATABASE_URL_DEV;
-  console.log('Using development database branch');
-}
+// Use the recommended variable from Neon
+const connectionString = process.env.DATABASE_URL;
 
 // Connection validation and error handling
 if (!connectionString) {
-  console.error('Missing NEON_DATABASE_URL environment variable');
+  console.error('Missing DATABASE_URL environment variable');
   // Instead of exiting, use a fallback or dummy connection string for Vercel 
   // that will allow the app to load but show a better error message
   connectionString = 'postgresql://dummy:dummy@dummy.neon.tech/dummy?sslmode=require';
 }
 
-// Throw a clearer error message if the connection string is incorrect
-if (connectionString === 'postgresql://neondb_owner:npg_KSGHL4eXAzQ0@ep-quiet-silence-a4gfx18p-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require') {
-  console.log('Using the configured Neon database connection string');
-}
+// Create a new pool for each serverless invocation
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: { rejectUnauthorized: false }
+});
 
-// Create a new Sequelize instance
+// Create a new Sequelize instance with serverless-friendly options
 const sequelize = new Sequelize(connectionString, {
   dialect: 'postgres',
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  logging: false, // Disable logging in production
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false // Required for some Neon connections
+      rejectUnauthorized: false
     }
   },
   pool: {
-    max: 5, // Maximum number of connection in pool
-    min: 0, // Minimum number of connection in pool
-    acquire: 30000, // Maximum time, in milliseconds, that pool will try to get connection before throwing error
-    idle: 10000 // Maximum time, in milliseconds, that a connection can be idle before being released
+    max: 2,
+    min: 0,
+    idle: 5000
   }
 });
 
@@ -52,8 +47,7 @@ const UserData = sequelize.define('user_data', {
   },
   userId: {
     type: DataTypes.STRING,
-    allowNull: false,
-    index: true
+    allowNull: false
   },
   startTime: {
     type: DataTypes.STRING,
@@ -64,82 +58,29 @@ const UserData = sequelize.define('user_data', {
     allowNull: false
   },
   leaderScore: {
-    type: DataTypes.STRING, // Store as STRING to match original format
-    allowNull: false,
-    get() {
-      // This ensures data is returned with the same format as MongoDB
-      return this.getDataValue('leaderScore');
-    },
-    set(value) {
-      // Allow both string and number inputs (for backward compatibility)
-      this.setDataValue('leaderScore', value.toString());
-    }
+    type: DataTypes.STRING,
+    allowNull: false
   },
   followerScore: {
-    type: DataTypes.STRING, // Store as STRING to match original format
-    allowNull: false,
-    get() {
-      // This ensures data is returned with the same format as MongoDB
-      return this.getDataValue('followerScore');
-    },
-    set(value) {
-      // Allow both string and number inputs (for backward compatibility)
-      this.setDataValue('followerScore', value.toString());
-    }
+    type: DataTypes.STRING,
+    allowNull: false
   },
   novelty: {
-    type: DataTypes.STRING, // Store as STRING to match original format
-    allowNull: true,
-    get() {
-      return this.getDataValue('novelty');
-    },
-    set(value) {
-      if (value === null || value === undefined) {
-        this.setDataValue('novelty', null);
-      } else {
-        this.setDataValue('novelty', value.toString());
-      }
-    }
+    type: DataTypes.STRING,
+    allowNull: true
   },
   disruption: {
-    type: DataTypes.STRING, // Store as STRING to match original format
-    allowNull: true,
-    get() {
-      return this.getDataValue('disruption');
-    },
-    set(value) {
-      if (value === null || value === undefined) {
-        this.setDataValue('disruption', null);
-      } else {
-        this.setDataValue('disruption', value.toString());
-      }
-    }
+    type: DataTypes.STRING,
+    allowNull: true
   },
   ordinariness: {
-    type: DataTypes.STRING, // Store as STRING to match original format
-    allowNull: true,
-    get() {
-      return this.getDataValue('ordinariness');
-    },
-    set(value) {
-      if (value === null || value === undefined) {
-        this.setDataValue('ordinariness', null);
-      } else {
-        this.setDataValue('ordinariness', value.toString());
-      }
-    }
+    type: DataTypes.STRING,
+    allowNull: true
   },
   eventDescription: {
     type: DataTypes.TEXT,
     allowNull: true
   }
-}, {
-  timestamps: true,
-  indexes: [
-    {
-      fields: ['userId']
-    }
-  ]
 });
 
 const EmailPreference = sequelize.define('email_preference', {
@@ -153,29 +94,22 @@ const EmailPreference = sequelize.define('email_preference', {
     allowNull: false,
     unique: true
   },
-  wantsReminders: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
   userEmail: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  wantsReminders: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   reminderTime: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  updatedAt: {
+  lastReminderSent: {
     type: DataTypes.DATE,
-    defaultValue: Sequelize.NOW
+    allowNull: true
   }
-}, {
-  timestamps: true,
-  indexes: [
-    {
-      fields: ['userId']
-    }
-  ]
 });
 
 const EmailLog = sequelize.define('email_log', {
@@ -186,73 +120,75 @@ const EmailLog = sequelize.define('email_log', {
   },
   userId: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: false
   },
-  emailSent: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
+  userEmail: {
+    type: DataTypes.STRING,
+    allowNull: false
   },
   sentAt: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: false,
+    defaultValue: Sequelize.NOW
   },
-  demo: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
+  subject: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false
   },
   error: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  errorAt: {
-    type: DataTypes.DATE,
-    allowNull: true
   }
-}, {
-  timestamps: true,
-  indexes: [
-    {
-      fields: ['userId']
-    }
-  ]
 });
 
-// Create connection pool and validate connection
+// Make sure to close connections after use
+const query = async (text, params) => {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(text, params);
+    return result;
+  } finally {
+    client.release(); // Important for serverless
+  }
+};
+
+// Connect to the database
 const connectToDatabase = async () => {
   try {
     await sequelize.authenticate();
     console.log('Connection to Neon PostgreSQL has been established successfully.');
-    return sequelize;
+    return true;
   } catch (error) {
     console.error('Unable to connect to the database:', error);
-    console.error('Please verify your NEON_DATABASE_URL environment variable.');
-    console.error('Use npm run vercel-setup:neon to set it up for Vercel deployment.');
-    // We'll continue but functionality will be limited
-    return sequelize;
+    return false;
   }
 };
 
-// Initialize database and create tables if they don't exist
+// Initialize the database (sync models)
 const initializeDatabase = async () => {
   try {
-    // Sync all models
     await sequelize.sync();
     console.log('Database synchronized successfully');
+    return true;
   } catch (error) {
-    console.error('Error initializing database:', error);
-    console.warn('App will continue but database functionality may be limited');
-    // Don't throw the error so the app can still load
+    console.error('Error synchronizing database:', error);
+    return false;
   }
 };
 
+// Export models and functions
 module.exports = {
-  sequelize,
-  connectToDatabase,
-  initializeDatabase,
   models: {
     UserData,
     EmailPreference,
     EmailLog
-  }
+  },
+  sequelize,
+  connectToDatabase,
+  initializeDatabase,
+  query // Export the direct query method for serverless use
 };

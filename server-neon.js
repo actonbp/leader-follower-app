@@ -1,3 +1,38 @@
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+// Add these lines at the top of the file, after the existing process handlers
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully');
+  await cleanup();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  await cleanup();
+  process.exit(0);
+});
+
+// Cleanup function to close database connections
+async function cleanup() {
+  try {
+    const { sequelize } = require('./db-neon');
+    if (sequelize) {
+      console.log('Closing database connections...');
+      await sequelize.close();
+      console.log('Database connections closed');
+    }
+  } catch (error) {
+    console.error('Error during cleanup:', error);
+  }
+}
+
 const express = require('express');
 const path = require('path');
 const moment = require('moment');
@@ -75,58 +110,25 @@ app.get('/get-user-data/:userId', async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    try {
-      // Find all data for this user ID
-      const userData = await models.UserData.findAll({
-        where: { userId },
-        order: [['createdAt', 'ASC']]
-      });
-
-      if (userData.length === 0) {
-        console.log(`No data found for user ID: ${userId}`);
-      } else {
-        console.log(`Found ${userData.length} entries for user ID: ${userId}`);
-      }
-
-      res.json(userData);
-    } catch (dbError) {
-      console.error('Database query failed:', dbError);
-      
-      // Fallback to file-based data if database query fails
-      try {
-        const fileData = [];
-        try {
-          // Read data from jsonl file as fallback
-          const fileContent = await fs.readFile(path.join(__dirname, 'user_data.jsonl'), 'utf8');
-          const lines = fileContent.split('\n');
-          
-          for (const line of lines) {
-            if (line.trim() !== '') {
-              try {
-                const entry = JSON.parse(line);
-                if (entry.userId === userId) {
-                  fileData.push(entry);
-                }
-              } catch (parseError) {
-                console.error('Error parsing line:', line, parseError);
-              }
-            }
-          }
-        } catch (readError) {
-          console.log('No fallback file data available');
-        }
-        
-        console.log(`Fallback: Using file data with ${fileData.length} entries`);
-        res.json(fileData);
-      } catch (fileError) {
-        throw new Error(`Database error: ${dbError.message}, File fallback error: ${fileError.message}`);
-      }
+    // Use the direct query method for better serverless compatibility
+    const result = await models.UserData.findAll({
+      where: { userId },
+      order: [['createdAt', 'ASC']]
+    });
+    
+    if (result.length === 0) {
+      console.log(`No data found for user ID: ${userId}`);
+    } else {
+      console.log(`Found ${result.length} entries for user ID: ${userId}`);
     }
+    
+    res.json(result);
   } catch (error) {
-    console.error('Error processing user data:', error);
+    console.error('Detailed error in get-user-data:', error);
     res.status(500).json({ 
-      error: 'Internal server error', 
-      details: error.message 
+      error: 'Database query failed', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -364,6 +366,17 @@ app.get('/check-email-status/:userId', async (req, res) => {
   }
 });
 
+// Add a catch-all error handler middleware
+app.use((err, req, res, next) => {
+  console.error('Global error handler caught:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
+// Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
