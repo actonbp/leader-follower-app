@@ -3,10 +3,20 @@ import { createIdentityTrajectoryChart, createGeneralIdentitySummary, createIden
 
 // Define the showPage function in the global scope
 function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(page => {
-        page.style.display = 'none';
-    });
-    document.getElementById(pageId).style.display = 'block';
+    console.log('showPage called with pageId:', pageId);
+    try {
+        document.querySelectorAll('.page').forEach(page => {
+            page.style.display = 'none';
+        });
+        const element = document.getElementById(pageId);
+        if (!element) {
+            console.error(`Element with ID ${pageId} not found!`);
+            return;
+        }
+        element.style.display = 'block';
+    } catch (error) {
+        console.error('Error in showPage function:', error);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,10 +32,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const reflectorBtn = document.getElementById('reflector-btn');
     if (reflectorBtn) {
         reflectorBtn.addEventListener('click', () => {
-            document.getElementById('main-welcome-page').style.display = 'none';
-            document.getElementById('reflector-section').style.display = 'block';
-            showPage('welcome-page');
-            console.log('Reflector button clicked');
+            try {
+                console.log('Reflector button clicked');
+                const mainPage = document.getElementById('main-welcome-page');
+                if (!mainPage) {
+                    console.error('main-welcome-page element not found');
+                    return;
+                }
+                mainPage.style.display = 'none';
+                
+                const reflectorSection = document.getElementById('reflector-section');
+                if (!reflectorSection) {
+                    console.error('reflector-section element not found');
+                    return;
+                }
+                reflectorSection.style.display = 'block';
+                
+                // Instead of using showPage, directly control the visibility
+                // of the welcome-page within the reflector-section
+                const welcomePage = document.getElementById('welcome-page');
+                if (!welcomePage) {
+                    console.error('welcome-page element not found');
+                    return;
+                }
+                
+                // Hide any other pages in the reflector section
+                const reflectorPages = reflectorSection.querySelectorAll('.page');
+                reflectorPages.forEach(page => {
+                    page.style.display = 'none';
+                });
+                
+                // Show the welcome page
+                welcomePage.style.display = 'block';
+            } catch (error) {
+                console.error('Error in reflector button click handler:', error);
+            }
         });
     } else {
         console.error('Reflector button not found in DOM');
@@ -34,12 +75,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const reporterBtn = document.getElementById('reporter-btn');
     if (reporterBtn) {
         reporterBtn.addEventListener('click', () => {
-            document.getElementById('main-welcome-page').style.display = 'none';
-            showPage('reporter-section');
-            // Clear previous data and reset UI
-            document.getElementById('reporter-content').style.display = 'none';
-            document.getElementById('reporter-user-id').value = '';
-            console.log('Reporter button clicked');
+            try {
+                console.log('Reporter button clicked');
+                const mainPage = document.getElementById('main-welcome-page');
+                if (!mainPage) {
+                    console.error('main-welcome-page element not found');
+                    return;
+                }
+                mainPage.style.display = 'none';
+                
+                showPage('reporter-section');
+                
+                // Clear previous data and reset UI
+                const reporterContent = document.getElementById('reporter-content');
+                if (!reporterContent) {
+                    console.error('reporter-content element not found');
+                } else {
+                    reporterContent.style.display = 'none';
+                }
+                
+                const reporterUserId = document.getElementById('reporter-user-id');
+                if (!reporterUserId) {
+                    console.error('reporter-user-id element not found');
+                } else {
+                    reporterUserId.value = '';
+                }
+            } catch (error) {
+                console.error('Error in reporter button click handler:', error);
+            }
         });
     } else {
         console.error('Reporter button not found in DOM');
