@@ -51,8 +51,27 @@
         }
     </style>
     
-    <!-- Main application script -->
-    <script type="module" src="/js/main.js" crossorigin="anonymous"></script>
+    <!-- Main application script - load as module -->
+    <script type="module" src="/js/main.js"></script>
+    
+    <!-- Load reporter.js as a module to make functions globally available -->
+    <script type="module">
+        import * as reporter from '/js/reporter.js';
+        
+        // Make reporter functions globally available
+        window.reporter = reporter;
+        
+        // Set up the generate PDF function
+        window.generatePDFReport = function() {
+            console.log('Generating PDF report');
+            if (window.reporter && typeof window.reporter.generateReporterPDF === 'function') {
+                window.reporter.generateReporterPDF();
+            } else {
+                console.error('generateReporterPDF function not found');
+                alert('Error: PDF generation function not available. Please refresh the page and try again.');
+            }
+        };
+    </script>
 </head>
 
 <body>
@@ -468,19 +487,7 @@
                         <div id="event-summary"></div>
                     </div>
                 </div>
-                <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;" onclick="generatePDFReport()">Generate PDF Report</button>
-                
-                <script>
-                    function generatePDFReport() {
-                        console.log('Generating PDF report');
-                        if (typeof generateReporterPDF === 'function') {
-                            generateReporterPDF();
-                        } else {
-                            console.error('generateReporterPDF function not found');
-                            alert('Error: PDF generation function not available. Please refresh the page and try again.');
-                        }
-                    }
-                </script>
+                <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;">Generate PDF Report</button>
             </div>
         </div>
 
@@ -498,6 +505,36 @@
         <script src="/js/email-preferences.js"></script>
     </div>
 
+    <script>
+        // Set up event listeners after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up load data button
+            const loadDataBtn = document.getElementById('load-data-btn');
+            if (loadDataBtn) {
+                loadDataBtn.addEventListener('click', function() {
+                    if (typeof loadReporterData === 'function') {
+                        loadReporterData();
+                    } else {
+                        console.error('loadReporterData function not found');
+                        alert('Error: Data loading function not available. Please refresh the page and try again.');
+                    }
+                });
+            }
+            
+            // Set up generate PDF button
+            const generatePdfBtn = document.getElementById('generate-pdf-btn');
+            if (generatePdfBtn) {
+                generatePdfBtn.addEventListener('click', function() {
+                    if (typeof window.generatePDFReport === 'function') {
+                        window.generatePDFReport();
+                    } else {
+                        console.error('generatePDFReport function not found');
+                        alert('Error: PDF generation function not available. Please refresh the page and try again.');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

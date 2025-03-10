@@ -1,5 +1,14 @@
-// Import statements moved to the top of the file
-import { createIdentityTrajectoryChart, createGeneralIdentitySummary, createIdentitySwitchesChart, createDailyEventsSummary, createDayToDayDynamics, createIdentitySwitchesPieChart, addChartDescriptions, generateReporterPDF, addChartDescription } from './reporter.js';
+// Import reporter functions directly
+import { 
+    createIdentityTrajectoryChart,
+    createGeneralIdentitySummary,
+    createIdentitySwitchesChart,
+    createIdentitySwitchesPieChart,
+    createDailyEventsSummary,
+    createDayToDayDynamics,
+    addChartDescriptions,
+    generateReporterPDF
+} from './reporter.js';
 
 // Define the showPage function in the global scope
 function showPage(pageId) {
@@ -306,6 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDataBtn.addEventListener('click', loadReporterData);
     }
 
+    // Make loadReporterData globally available
+    window.loadReporterData = loadReporterData;
+
     async function loadReporterData() {
         try {
             // Show loading indicator
@@ -379,6 +391,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const generatePdfBtn = document.getElementById('generate-pdf-btn');
             if (generatePdfBtn) {
                 generatePdfBtn.style.display = 'block';
+                generatePdfBtn.addEventListener('click', function() {
+                    console.log('Generate PDF button clicked');
+                    generateReporterPDF();
+                });
             }
             
             // Make sure Chart.js is loaded
@@ -387,73 +403,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 await loadChartJsDynamically();
             }
             
-            // Import the reporter module
+            // Create charts with try/catch for each
             try {
-                const reporter = await import('./reporter.js');
-                console.log('Reporter module loaded successfully');
-                
-                // Set up PDF generation
-                if (generatePdfBtn) {
-                    generatePdfBtn.addEventListener('click', function() {
-                        console.log('Generate PDF button clicked');
-                        reporter.generateReporterPDF();
-                    });
-                }
-                
-                // Create charts with try/catch for each
-                try {
-                    reporter.createIdentityTrajectoryChart(data);
-                    console.log('Identity trajectory chart created successfully');
-                } catch (error) {
-                    console.error('Error creating identity trajectory chart:', error);
-                }
-                
-                try {
-                    reporter.createGeneralIdentitySummary(data);
-                    console.log('General identity summary created successfully');
-                } catch (error) {
-                    console.error('Error creating general identity summary:', error);
-                }
-                
-                try {
-                    reporter.createIdentitySwitchesChart(data);
-                    console.log('Identity switches chart created successfully');
-                } catch (error) {
-                    console.error('Error creating identity switches chart:', error);
-                }
-                
-                try {
-                    reporter.createIdentitySwitchesPieChart(data);
-                    console.log('Identity switches pie chart created successfully');
-                } catch (error) {
-                    console.error('Error creating identity switches pie chart:', error);
-                }
-                
-                try {
-                    reporter.createDailyEventsSummary(data);
-                    console.log('Daily events summary created successfully');
-                } catch (error) {
-                    console.error('Error creating daily events summary:', error);
-                }
-                
-                try {
-                    reporter.createDayToDayDynamics(data);
-                    console.log('Day-to-day dynamics created successfully');
-                } catch (error) {
-                    console.error('Error creating day-to-day dynamics:', error);
-                }
-                
-                // Add chart descriptions
-                try {
-                    reporter.addChartDescriptions();
-                    console.log('Chart descriptions added successfully');
-                } catch (error) {
-                    console.error('Error adding chart descriptions:', error);
-                }
-                
-            } catch (importError) {
-                console.error('Error importing reporter module:', importError);
-                alert('Failed to load the reporting module. Please check the console for details.');
+                createIdentityTrajectoryChart(data);
+                console.log('Identity trajectory chart created successfully');
+            } catch (error) {
+                console.error('Error creating identity trajectory chart:', error);
+            }
+            
+            try {
+                createGeneralIdentitySummary(data);
+                console.log('General identity summary created successfully');
+            } catch (error) {
+                console.error('Error creating general identity summary:', error);
+            }
+            
+            try {
+                createIdentitySwitchesChart(data);
+                console.log('Identity switches chart created successfully');
+            } catch (error) {
+                console.error('Error creating identity switches chart:', error);
+            }
+            
+            try {
+                createIdentitySwitchesPieChart(data);
+                console.log('Identity switches pie chart created successfully');
+            } catch (error) {
+                console.error('Error creating identity switches pie chart:', error);
+            }
+            
+            try {
+                createDailyEventsSummary(data);
+                console.log('Daily events summary created successfully');
+            } catch (error) {
+                console.error('Error creating daily events summary:', error);
+            }
+            
+            try {
+                createDayToDayDynamics(data);
+                console.log('Day-to-day dynamics created successfully');
+            } catch (error) {
+                console.error('Error creating day-to-day dynamics:', error);
+            }
+            
+            // Add chart descriptions
+            try {
+                addChartDescriptions();
+                console.log('Chart descriptions added successfully');
+            } catch (error) {
+                console.error('Error adding chart descriptions:', error);
             }
             
         } catch (error) {
