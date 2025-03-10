@@ -5,7 +5,7 @@ const { parse } = require('pg-connection-string');
 require('dotenv').config();
 
 // Use the recommended variable from Neon
-const connectionString = process.env.DATABASE_URL;
+let connectionString = process.env.DATABASE_URL;
 
 // Connection validation and error handling
 if (!connectionString) {

@@ -117,12 +117,42 @@ app.get('/get-user-data/:userId', async (req, res) => {
     });
     
     if (result.length === 0) {
-      console.log(`No data found for user ID: ${userId}`);
+      console.log(`No data found for user ID: ${userId} in database, checking file...`);
+      
+      // Fall back to file-based data
+      try {
+        const fileData = [];
+        const fileContent = await fs.readFile(path.join(__dirname, 'user_data.jsonl'), 'utf8');
+        const lines = fileContent.split('\n');
+        
+        for (const line of lines) {
+          if (line.trim() !== '') {
+            try {
+              const entry = JSON.parse(line);
+              if (entry.userId === userId) {
+                fileData.push(entry);
+              }
+            } catch (parseError) {
+              console.error('Error parsing line:', line, parseError);
+            }
+          }
+        }
+        
+        if (fileData.length > 0) {
+          console.log(`Found ${fileData.length} entries for user ID: ${userId} in file`);
+          return res.json(fileData);
+        } else {
+          console.log(`No data found for user ID: ${userId} in file either`);
+          return res.json([]);
+        }
+      } catch (fileError) {
+        console.error('Error reading file:', fileError);
+        return res.json([]);
+      }
     } else {
-      console.log(`Found ${result.length} entries for user ID: ${userId}`);
+      console.log(`Found ${result.length} entries for user ID: ${userId} in database`);
+      res.json(result);
     }
-    
-    res.json(result);
   } catch (error) {
     console.error('Detailed error in get-user-data:', error);
     res.status(500).json({ 
