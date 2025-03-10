@@ -3,7 +3,14 @@ const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config();
 
 // Neon connection string - should be in environment variables
+// Check for environment-specific connection strings first
 let connectionString = process.env.NEON_DATABASE_URL;
+
+// For development environments, use the dev connection string if available
+if (process.env.NODE_ENV === 'development' && process.env.NEON_DATABASE_URL_DEV) {
+  connectionString = process.env.NEON_DATABASE_URL_DEV;
+  console.log('Using development database branch');
+}
 
 // Connection validation and error handling
 if (!connectionString) {

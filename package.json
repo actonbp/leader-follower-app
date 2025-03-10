@@ -23,7 +23,8 @@
         "migrate-data": "node migrate-data.js",
         "migrate-to-neon": "node migrate-to-neon.js",
         "vercel-deploy:neon": "cp vercel-neon.json vercel.json && vercel",
-        "vercel-prod:neon": "cp vercel-neon.json vercel.json && vercel --prod"
+        "vercel-prod:neon": "cp vercel-neon.json vercel.json && vercel --prod",
+        "neon-branch": "./scripts/create-neon-branch.sh"
     },
     "dependencies": {
         "body-parser": "^1.19.0",

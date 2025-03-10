@@ -65,6 +65,8 @@ If you have existing data in MongoDB and want to migrate it to Neon PostgreSQL:
 
 ## 4. Deploy to Vercel
 
+### Setup
+
 1. **Set up Vercel CLI** (if not already installed)
    ```bash
    npm install -g vercel
@@ -76,43 +78,64 @@ If you have existing data in MongoDB and want to migrate it to Neon PostgreSQL:
    ```
 
 3. **Add your Neon connection string to Vercel environment variables**
-   - Create or update your project on Vercel
+   The easiest way is to use our setup script:
+   ```bash
+   npm run vercel-setup:neon
+   ```
+   
+   This will prompt for your Neon connection string and add it to all Vercel environments.
+
+   Alternatively, you can add it manually in the Vercel dashboard:
    - Go to your project settings
-   - Add the following environment variable:
-     - Key: `NEON_DATABASE_URL`
-     - Value: Your Neon connection string
+   - Click on "Environment Variables"
+   - Add: `NEON_DATABASE_URL` with your connection string
+   - Apply to all environments (Production, Preview, Development)
 
-4. **Update vercel.json**
-   Make sure your vercel.json file points to the new server-neon.js file.
-   Example:
-   ```json
-   {
-     "version": 2,
-     "builds": [
-       {
-         "src": "server-neon.js",
-         "use": "@vercel/node"
-       },
-       {
-         "src": "src/public/**",
-         "use": "@vercel/static"
-       }
-     ],
-     "routes": [
-       { "src": "/api/(.*)", "dest": "server-neon.js" },
-       { "src": "/(.*)", "dest": "server-neon.js" }
-     ]
-   }
+### Git-based Deployment
+
+For a safer deployment workflow, use branches:
+
+1. **Create a development branch**
+   ```bash
+   git checkout -b development
    ```
 
-5. **Deploy to Vercel**
+2. **Make changes and test in preview environment**
    ```bash
-   vercel
+   # Make your changes
+   git add .
+   git commit -m "Your changes"
+   git push origin development
+   
+   # Deploy to preview
+   npm run vercel-deploy:neon
    ```
-   or for production:
+
+3. **When ready for production**
    ```bash
-   vercel --prod
+   git checkout main
+   git merge development
+   git push origin main
+   
+   # Deploy to production
+   npm run vercel-prod:neon
    ```
+
+### Direct Deployment
+
+If you prefer to deploy directly:
+
+1. **Preview deployment** (creates a unique URL)
+   ```bash
+   npm run vercel-deploy:neon
+   ```
+
+2. **Production deployment**
+   ```bash
+   npm run vercel-prod:neon
+   ```
+
+These commands will automatically use the correct `vercel.json` configuration.
 
 ## 5. Advanced Neon Features
 

@@ -37,14 +37,43 @@ To migrate data from MongoDB to Neon:
 
 ### Vercel Deployment
 
+#### Environment Setup
+
 1. Set up Vercel environment variables:
    ```
    npm run vercel-setup:neon
    ```
-2. Deploy:
+   This will add the `NEON_DATABASE_URL` to all environments (development, preview, production).
+
+#### Best Practice for GitHub-based Deployments
+
+For a safer deployment workflow with multiple environments:
+
+1. Use different branches for different environments:
+   - `main` branch → Production environment
+   - `development` branch → Preview/staging environment
+   - Feature branches → Preview environments for testing
+
+2. Deploy workflow:
+   ```bash
+   # For development/staging (deploys to a preview URL)
+   git checkout development
+   # Make your changes
+   git commit -am "Your changes"
+   git push origin development
+   npm run vercel-deploy:neon
+
+   # When ready for production (after testing in preview)
+   git checkout main
+   git merge development
+   git push origin main
+   npm run vercel-prod:neon
    ```
-   npm run vercel-deploy:neon   # For testing
-   npm run vercel-prod:neon     # For production
+
+3. To deploy any branch for testing:
+   ```
+   npm run vercel-deploy:neon   # Deploys current branch to preview URL
+   npm run vercel-prod:neon     # Deploys current branch to production
    ```
 
 ## Data Compatibility
