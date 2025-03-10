@@ -24,9 +24,39 @@
         <div id="main-welcome-page" class="page text-center mt-5">
             <h1 class="mb-4">Welcome to the Leader-Follower Identity Tracker (LFIT)</h1>
             <div class="option-buttons d-flex justify-content-center mb-4">
-                <button id="reflector-btn" class="btn btn-primary mx-2">LFIT-Reflector</button>
-                <button id="reporter-btn" class="btn btn-primary mx-2">LFIT-Reporter</button>
+                <button id="reflector-btn" class="btn btn-primary mx-2" onclick="openReflector()">LFIT-Reflector</button>
+                <button id="reporter-btn" class="btn btn-primary mx-2" onclick="openReporter()">LFIT-Reporter</button>
             </div>
+            
+            <script>
+                // Direct inline functions to handle button clicks
+                function openReflector() {
+                    console.log('Opening reflector section');
+                    document.getElementById('main-welcome-page').style.display = 'none';
+                    const reflectorSection = document.getElementById('reflector-section');
+                    reflectorSection.style.display = 'block';
+                    
+                    // Find welcome-page inside reflector-section and show it
+                    const pages = reflectorSection.querySelectorAll('.page');
+                    pages.forEach(page => page.style.display = 'none');
+                    const welcomePage = document.getElementById('welcome-page');
+                    if (welcomePage) {
+                        welcomePage.style.display = 'block';
+                    }
+                }
+                
+                function openReporter() {
+                    console.log('Opening reporter section');
+                    document.getElementById('main-welcome-page').style.display = 'none';
+                    document.getElementById('reporter-section').style.display = 'block';
+                    // Clear any previous data
+                    document.getElementById('reporter-content').style.display = 'none';
+                    const reporterUserId = document.getElementById('reporter-user-id');
+                    if (reporterUserId) {
+                        reporterUserId.value = '';
+                    }
+                }
+            </script>
             <img src="/images/start_here.png" alt="Start Here" class="start-here-image">
         </div>
 
