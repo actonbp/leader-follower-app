@@ -5,7 +5,9 @@
 - **Run with Neon DB**: `npm run dev:neon` (with auto-reload)
 - **Start production**: `npm start`
 - **Start with Neon DB**: `npm run start:neon`
+- **Create test data**: `npm run create-test-data` (creates TEST01 user with sample data)
 - **Screenshots**: `npm run ai-capture` (creates screenshots in ai_captures/)
+- **List images**: `npm run list-images` (shows available screenshots with descriptions)
 - **Deploy with MongoDB**: `npm run vercel-deploy` (test) or `npm run vercel-prod` (production)
 - **Deploy with Neon**: `npm run vercel-deploy:neon` (test) or `npm run vercel-prod:neon` (production)
 - **Setup Vercel for Neon**: `npm run vercel-setup:neon`

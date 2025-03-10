@@ -122,9 +122,10 @@ async function captureForAI() {
       // Try to enter a test ID for reporter
       if (await page.$('#reporter-user-id')) {
         await page.type('#reporter-user-id', 'TEST01');
-        if (await page.$('#reporter-start-btn')) {
-          await page.click('#reporter-start-btn');
-          await wait(2000);
+        if (await page.$('#load-data-btn')) {
+          await page.click('#load-data-btn');
+          // Wait longer for charts to render
+          await wait(3000);
           
           await page.screenshot({ path: path.join(aiCaptureDir, '06_reporter_dashboard.png'), fullPage: true });
           const dashboardHtml = await page.content();
@@ -134,6 +135,36 @@ async function captureForAI() {
           summaryContent += `- **Screenshot**: [06_reporter_dashboard.png](./06_reporter_dashboard.png)\n`;
           summaryContent += `- **HTML**: [06_reporter_dashboard.html](./06_reporter_dashboard.html)\n`;
           summaryContent += `- **Description**: The dashboard showing visualizations of user's reflection data.\n\n`;
+          
+          // Capture identity tab charts
+          if (await page.$('#identity-tab-btn')) {
+            await page.click('#identity-tab-btn');
+            await wait(1000);
+            
+            await page.screenshot({ path: path.join(aiCaptureDir, '06a_identity_charts.png'), fullPage: true });
+            const identityHtml = await page.content();
+            await fs.writeFile(path.join(aiCaptureDir, '06a_identity_charts.html'), identityHtml);
+            
+            summaryContent += `### 6a. Identity Charts\n`;
+            summaryContent += `- **Screenshot**: [06a_identity_charts.png](./06a_identity_charts.png)\n`;
+            summaryContent += `- **HTML**: [06a_identity_charts.html](./06a_identity_charts.html)\n`;
+            summaryContent += `- **Description**: Identity trajectory and statistics visualizations.\n\n`;
+          }
+          
+          // Capture events tab charts
+          if (await page.$('#events-tab-btn')) {
+            await page.click('#events-tab-btn');
+            await wait(1000);
+            
+            await page.screenshot({ path: path.join(aiCaptureDir, '06b_events_charts.png'), fullPage: true });
+            const eventsHtml = await page.content();
+            await fs.writeFile(path.join(aiCaptureDir, '06b_events_charts.html'), eventsHtml);
+            
+            summaryContent += `### 6b. Events Charts\n`;
+            summaryContent += `- **Screenshot**: [06b_events_charts.png](./06b_events_charts.png)\n`;
+            summaryContent += `- **HTML**: [06b_events_charts.html](./06b_events_charts.html)\n`;
+            summaryContent += `- **Description**: Visualizations of event characteristics and impacts.\n\n`;
+          }
         }
       }
     }

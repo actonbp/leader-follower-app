@@ -41,6 +41,31 @@ app.post('/submit-data', async (req, res) => {
         const data = req.body;
         const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
 
+        // Validate required fields first
+        if (!data.userId) {
+            console.error('Missing required field: userId');
+            return res.status(400).json({
+                message: 'Error saving data: Missing userId field',
+                error: 'userId is required'
+            });
+        }
+
+        if (!data.startTime) {
+            console.error('Missing required field: startTime');
+            return res.status(400).json({
+                message: 'Error saving data: Missing startTime field',
+                error: 'startTime is required'
+            });
+        }
+
+        if (!data.leaderPercent || !data.followerPercent) {
+            console.error('Missing required fields: leaderPercent or followerPercent');
+            return res.status(400).json({
+                message: 'Error saving data: Missing leader/follower data',
+                error: 'Leader and follower percentages are required'
+            });
+        }
+
         // Create a new user data record
         const result = await models.UserData.create({
           userId: data.userId,
@@ -57,7 +82,8 @@ app.post('/submit-data', async (req, res) => {
         console.log(`Data saved with ID: ${result.id}`);
         res.json({ 
             message: 'Data saved successfully', 
-            id: result.id 
+            id: result.id,
+            userId: data.userId
         });
     } catch (err) {
         console.error('Error saving data:', err);

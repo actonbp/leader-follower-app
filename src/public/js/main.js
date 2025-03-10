@@ -112,6 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('start-btn').addEventListener('click', () => {
         const userId = document.getElementById('user-id').value;
         if (userId) {
+            // Store userId in localStorage for recovery if needed
+            localStorage.setItem('userId', userId);
+            
             fetch(`/check-user/${userId}`)
                 .then(response => response.json())
                 .then(data => {
@@ -172,6 +175,22 @@ document.addEventListener('DOMContentLoaded', () => {
         userData.disruption = document.getElementById('disruption').value;
         userData.ordinariness = document.getElementById('ordinariness').value;
 
+        // Ensure required fields are present before submission
+        if (!userData.userId || !userData.startTime) {
+            console.error('Missing required fields:', { userId: userData.userId, startTime: userData.startTime });
+            userData.userId = userData.userId || localStorage.getItem('userId');
+            userData.startTime = userData.startTime || new Date().toISOString();
+            console.log('After recovery attempt:', { userId: userData.userId, startTime: userData.startTime });
+            
+            if (!userData.userId || !userData.startTime) {
+                alert('Session data is missing. Please restart from the beginning.');
+                document.getElementById('reflector-section').style.display = 'none';
+                showPage('main-welcome-page');
+                userData = {};
+                return;
+            }
+        }
+
         fetch('/submit-data', {
             method: 'POST',
             headers: {
@@ -206,7 +225,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('new-rating-btn').addEventListener('click', () => {
-        userData = { userId: userData.userId };
+        // Preserve the userId or recover it from localStorage
+        const currentUserId = userData.userId || localStorage.getItem('userId');
+        if (!currentUserId) {
+            alert('Session data is missing. Please restart from the beginning.');
+            document.getElementById('reflector-section').style.display = 'none';
+            showPage('main-welcome-page');
+            userData = {};
+            return;
+        }
+        
+        userData = { userId: currentUserId };
         userData.startTime = new Date().toISOString();
         showPage('grid-page');
         point.style.display = 'none';
