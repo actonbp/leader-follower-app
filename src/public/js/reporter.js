@@ -129,67 +129,64 @@ export function createGeneralIdentitySummary(data) {
             followerVariabilityElement.textContent = followerStdDev.toFixed(2);
         }
         
-        // Create a simple bar chart instead of box plot due to compatibility issues
-        try {
-            window.generalIdentityChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Leader Identity', 'Follower Identity'],
-                    datasets: [{
-                        label: 'Mean Score',
-                        data: [leaderMean, followerMean],
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.7)',
-                            'rgba(54, 162, 235, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgb(255, 99, 132)',
-                            'rgb(54, 162, 235)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            title: {
-                                display: true,
-                                text: 'Identity Score'
-                            }
-                        }
-                    },
-                    plugins: {
+        // Create a simple bar chart
+        window.generalIdentityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Leader Identity', 'Follower Identity'],
+                datasets: [{
+                    label: 'Mean Score',
+                    data: [leaderMean, followerMean],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(255, 99, 132)',
+                        'rgb(54, 162, 235)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
                         title: {
                             display: true,
-                            text: 'Average Leader and Follower Identity Scores'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                afterLabel: function(context) {
-                                    const index = context.dataIndex;
-                                    const stdDev = index === 0 ? leaderStdDev : followerStdDev;
-                                    return `Standard Deviation: ${stdDev.toFixed(2)}`;
-                                }
+                            text: 'Identity Score'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Average Leader and Follower Identity Scores'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const index = context.dataIndex;
+                                const stdDev = index === 0 ? leaderStdDev : followerStdDev;
+                                return `Standard Deviation: ${stdDev.toFixed(2)}`;
                             }
                         }
                     }
                 }
-            });
-            
-            // Add error bars manually
-            const meta = window.generalIdentityChart.getDatasetMeta(0);
-            const errorBarColor = 'rgba(0, 0, 0, 0.5)';
-            const errorBarWidth = 10;
-            
-            window.generalIdentityChart.options.animation = false;
-            window.generalIdentityChart.update();
-            
-            const drawErrorBars = function() {
+            }
+        });
+        
+        // Add error bars manually after chart is created
+        const drawErrorBars = function() {
+            try {
+                const meta = window.generalIdentityChart.getDatasetMeta(0);
                 const ctx = window.generalIdentityChart.ctx;
+                const errorBarColor = 'rgba(0, 0, 0, 0.5)';
+                const errorBarWidth = 10;
+                
                 ctx.save();
                 ctx.strokeStyle = errorBarColor;
                 ctx.lineWidth = 2;
@@ -204,7 +201,6 @@ export function createGeneralIdentitySummary(data) {
                     
                     const yTop = yScale.getPixelForValue(Math.min(mean + stdDev, 100));
                     const yBottom = yScale.getPixelForValue(Math.max(mean - stdDev, 0));
-                    const yMean = yScale.getPixelForValue(mean);
                     
                     // Draw vertical line
                     ctx.beginPath();
@@ -226,43 +222,52 @@ export function createGeneralIdentitySummary(data) {
                 }
                 
                 ctx.restore();
-            };
-            
-            // Add event listener to draw error bars after animation
+            } catch (error) {
+                console.error('Error drawing error bars:', error);
+            }
+        };
+        
+        // Draw error bars after animation completes
+        if (window.generalIdentityChart.options.animation) {
             window.generalIdentityChart.options.animation.onComplete = drawErrorBars;
-            window.generalIdentityChart.options.animation.onProgress = drawErrorBars;
-            window.generalIdentityChart.update();
-            
-        } catch (chartError) {
-            console.error('Error creating general identity chart:', chartError);
-            
-            // Create a fallback display
-            const container = canvas.parentElement;
-            const fallbackDiv = document.createElement('div');
-            fallbackDiv.innerHTML = `
-                <h4>General Identity Summary:</h4>
-                <table class="table">
-                    <tr>
-                        <th>Identity</th>
-                        <th>Mean Score</th>
-                        <th>Standard Deviation</th>
-                    </tr>
-                    <tr>
-                        <td>Leader</td>
-                        <td>${leaderMean.toFixed(2)}</td>
-                        <td>${leaderStdDev.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>Follower</td>
-                        <td>${followerMean.toFixed(2)}</td>
-                        <td>${followerStdDev.toFixed(2)}</td>
-                    </tr>
-                </table>
-            `;
-            container.appendChild(fallbackDiv);
+        } else {
+            // If animation is disabled, draw immediately
+            drawErrorBars();
         }
+        
     } catch (error) {
         console.error('Error creating general identity summary:', error);
+        
+        // Create a fallback display if chart creation fails
+        try {
+            const container = document.getElementById('general-identity');
+            if (container) {
+                const fallbackDiv = document.createElement('div');
+                fallbackDiv.innerHTML = `
+                    <h4>General Identity Summary:</h4>
+                    <table class="table">
+                        <tr>
+                            <th>Identity</th>
+                            <th>Mean Score</th>
+                            <th>Standard Deviation</th>
+                        </tr>
+                        <tr>
+                            <td>Leader</td>
+                            <td>${leaderMean.toFixed(2)}</td>
+                            <td>${leaderStdDev.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Follower</td>
+                            <td>${followerMean.toFixed(2)}</td>
+                            <td>${followerStdDev.toFixed(2)}</td>
+                        </tr>
+                    </table>
+                `;
+                container.appendChild(fallbackDiv);
+            }
+        } catch (fallbackError) {
+            console.error('Error creating fallback display:', fallbackError);
+        }
     }
 }
 

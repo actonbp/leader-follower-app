@@ -379,23 +379,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const generatePdfBtn = document.getElementById('generate-pdf-btn');
             if (generatePdfBtn) {
                 generatePdfBtn.style.display = 'block';
-                generatePdfBtn.addEventListener('click', function() {
-                    const reporter = import('./reporter.js').then(module => {
-                        module.generateReporterPDF();
-                    });
-                });
             }
             
-            // Create charts with error handling
+            // Make sure Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js is not loaded. Attempting to load it dynamically.');
+                await loadChartJsDynamically();
+            }
+            
+            // Import the reporter module
             try {
-                // Make sure Chart.js is loaded
-                if (typeof Chart === 'undefined') {
-                    console.error('Chart.js is not loaded. Attempting to load it dynamically.');
-                    await loadChartJsDynamically();
-                }
-                
-                // Import the reporter module
                 const reporter = await import('./reporter.js');
+                console.log('Reporter module loaded successfully');
+                
+                // Set up PDF generation
+                if (generatePdfBtn) {
+                    generatePdfBtn.addEventListener('click', function() {
+                        console.log('Generate PDF button clicked');
+                        reporter.generateReporterPDF();
+                    });
+                }
                 
                 // Create charts with try/catch for each
                 try {
@@ -448,9 +451,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Error adding chart descriptions:', error);
                 }
                 
-            } catch (chartError) {
-                console.error('Error creating charts:', chartError);
-                alert('There was an error creating the charts. Please check the console for details.');
+            } catch (importError) {
+                console.error('Error importing reporter module:', importError);
+                alert('Failed to load the reporting module. Please check the console for details.');
             }
             
         } catch (error) {
