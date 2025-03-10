@@ -1,5 +1,5 @@
 // Import statements moved to the top of the file
-import { createIdentityTrajectoryChart, createGeneralIdentitySummary, createIdentitySwitchesChart, createDailyEventsSummary, createDayToDayDynamics, createIdentitySwitchesPieChart, addChartDescriptions, generateReporterPDF, addChartDescription, openTab } from './reporter.js';
+import { createIdentityTrajectoryChart, createGeneralIdentitySummary, createIdentitySwitchesChart, createDailyEventsSummary, createDayToDayDynamics, createIdentitySwitchesPieChart, addChartDescriptions, generateReporterPDF, addChartDescription } from './reporter.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const pages = ['welcome-page', 'instructions-page', 'grid-page', 'event-reflection-page', 'event-rating-page', 'completion-page'];
@@ -198,7 +198,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('export-reflector-pdf-btn').addEventListener('click', generateReflectorPDF);
     }
 
-    document.getElementById('load-data-btn').addEventListener('click', loadReporterData);
+    // Reporter functionality
+    const loadDataBtn = document.getElementById('load-data-btn');
+    if (loadDataBtn) {
+        loadDataBtn.addEventListener('click', loadReporterData);
+    }
 
     function loadReporterData() {
         const userId = document.getElementById('reporter-user-id').value;
@@ -229,12 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // Hide the load data button and show the generate PDF button
                         document.getElementById('load-data-btn').style.display = 'none';
-                        const generatePdfBtn = document.getElementById('generate-pdf-btn');
-                        if (generatePdfBtn) {
-                            generatePdfBtn.addEventListener('click', generateReporterPDF);
-                        } else {
-                            console.error('Generate PDF button not found');
-                        }
+                        document.getElementById('generate-pdf-btn').style.display = 'block';
+                        document.getElementById('generate-pdf-btn').addEventListener('click', generateReporterPDF);
                     } else {
                         throw new Error('No data found for this user ID.');
                     }
@@ -292,17 +292,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('liminality-section').innerHTML = liminalityText;
     }
 
-    window.openTab = function(evt, tabName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-    };
+    // Tab functionality
+    document.getElementById('identity-tab-btn').addEventListener('click', function(event) {
+        // Hide all tab content
+        document.querySelectorAll('.tabcontent').forEach(tab => {
+            tab.style.display = 'none';
+        });
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tablinks').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        // Show the selected tab and add active class to button
+        document.getElementById('identity-tab').style.display = 'block';
+        event.currentTarget.classList.add('active');
+    });
+
+    document.getElementById('events-tab-btn').addEventListener('click', function(event) {
+        // Hide all tab content
+        document.querySelectorAll('.tabcontent').forEach(tab => {
+            tab.style.display = 'none';
+        });
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tablinks').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        // Show the selected tab and add active class to button
+        document.getElementById('events-tab').style.display = 'block';
+        event.currentTarget.classList.add('active');
+    });
 });

@@ -17,7 +17,6 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@3.0.0/build/Chart.BoxPlot.min.js"></script>
     <script type="module" src="/js/main.js"></script>
-    <script type="module" src="/js/reporter.js"></script>
 </head>
 
 <body>
@@ -141,8 +140,8 @@
             <button id="load-data-btn" class="btn btn-success">Load Data</button>
             <div id="reporter-content" style="display: none;">
                 <div class="tab">
-                    <button class="tablinks active" onclick="openTab(event, 'identity-tab')">Identity Information</button>
-                    <button class="tablinks" onclick="openTab(event, 'events-tab')">Events Information</button>
+                    <button class="tablinks active" id="identity-tab-btn">Identity Information</button>
+                    <button class="tablinks" id="events-tab-btn">Events Information</button>
                 </div>
                 
                 <div id="identity-tab" class="tabcontent">
@@ -197,7 +196,6 @@
                         <div id="event-summary"></div>
                     </div>
                 </div>
-                <button id="export-reporter-pdf-btn" class="btn btn-success" style="display: none;">Export to PDF</button>
                 <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;">Generate PDF Report</button>
             </div>
         </div>
