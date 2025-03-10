@@ -528,3 +528,99 @@ footer {
         padding: 8px;
     }
 }
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 60px !important;
+    margin-top: 40px !important;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#identity-tab, #events-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+#identity-tab h3, #events-tab h3 {
+    margin-top: 40px;
+    margin-bottom: 30px;
+    width: 100%;
+    max-width: 600px;
+    text-align: left;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 10px;
+    clear: both;
+}
+
+#identity-tab p, #events-tab p {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+#day-to-day-dynamics, #daily-events, #general-identity {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    background-color: #f9f9f9;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    clear: both;
+}
+
+#identity-variability-table {
+    width: 100%;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    border-collapse: collapse;
+}
+
+#variability-interpretation {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f0f8ff;
+    border-radius: 8px;
+    border-left: 4px solid #4CAF50;
+}
+
+/* Specific styling for the liminality section */
+#liminality-section {
+    height: auto !important;
+    min-height: 200px;
+    padding: 30px;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    clear: both;
+}
+
+#liminality-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 10px;
+}
+
+#liminality-section p {
+    margin-bottom: 15px;
+}
+
+#liminality-section ul {
+    margin-bottom: 20px;
+}
+
+/* Add more space between generate PDF button and content */
+#generate-pdf-btn {
+    margin-top: 40px;
+    margin-bottom: 30px;
+}

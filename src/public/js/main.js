@@ -321,6 +321,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Received data:', data);
                     if (data && Array.isArray(data) && data.length > 0) {
                         document.getElementById('reporter-content').style.display = 'block';
+                        
+                        // Show the identity tab by default
+                        document.getElementById('identity-tab').style.display = 'block';
+                        document.getElementById('identity-tab-btn').className += " active";
+                        
                         createIdentityTrajectoryChart(data);
                         createGeneralIdentitySummary(data);
                         createIdentitySwitchesChart(data);
