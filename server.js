@@ -21,78 +21,71 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'public', 'index.html'));
 });
 
+// Import the database module
+const { getCollection } = require('./db');
+
 // Route to handle data submission
-app.post('/submit-data', (req, res) => {
-    const data = req.body;
-    const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+app.post('/submit-data', async (req, res) => {
+    try {
+        const data = req.body;
+        const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
 
-    const dataToSave = {
-        userId: data.userId,
-        startTime: data.startTime,
-        submitTime: timestamp,
-        leaderScore: data.leaderPercent,
-        followerScore: data.followerPercent,
-        novelty: data.novelty,
-        disruption: data.disruption,
-        ordinariness: data.ordinariness,
-        eventDescription: data.eventDescription
-    };
+        const dataToSave = {
+            userId: data.userId,
+            startTime: data.startTime,
+            submitTime: timestamp,
+            leaderScore: data.leaderPercent,
+            followerScore: data.followerPercent,
+            novelty: data.novelty,
+            disruption: data.disruption,
+            ordinariness: data.ordinariness,
+            eventDescription: data.eventDescription
+        };
 
-    const dataString = JSON.stringify(dataToSave) + '\n';
-
-    fs.appendFile(path.join(__dirname, 'user_data.jsonl'), dataString)
-        .then(() => {
-            res.json({ message: 'Data saved successfully' });
-        })
-        .catch((err) => {
-            console.error('Error saving data:', err);
-            res.status(500).json({ message: 'Error saving data', error: err.message });
+        // Get the user_data collection
+        const collection = await getCollection('user_data');
+        
+        // Insert the document
+        const result = await collection.insertOne(dataToSave);
+        
+        console.log(`Data saved with ID: ${result.insertedId}`);
+        res.json({ 
+            message: 'Data saved successfully', 
+            id: result.insertedId 
         });
+    } catch (err) {
+        console.error('Error saving data:', err);
+        res.status(500).json({ 
+            message: 'Error saving data', 
+            error: err.message 
+        });
+    }
 });
 
 // Route to get user data for the reporter
 app.get('/get-user-data/:userId', async (req, res) => {
     const userId = req.params.userId;
-    const userData = [];
 
     try {
-        const filePath = path.join(__dirname, 'user_data.jsonl');
-        let fileContent;
-        try {
-            fileContent = await fs.readFile(filePath, 'utf8');
-        } catch (readError) {
-            if (readError.code === 'ENOENT') {
-                console.log('user_data.jsonl file not found. Creating an empty file.');
-                await fs.writeFile(filePath, '');
-                fileContent = '';
-            } else {
-                throw readError;
-            }
-        }
-
-        const lines = fileContent.split('\n');
-
-        for (const line of lines) {
-            if (line.trim() !== '') {
-                try {
-                    const data = JSON.parse(line);
-                    if (data.userId === userId) {
-                        userData.push(data);
-                    }
-                } catch (parseError) {
-                    console.error('Error parsing line:', line, parseError);
-                }
-            }
-        }
+        // Get the user_data collection
+        const collection = await getCollection('user_data');
+        
+        // Find all documents for this user ID
+        const userData = await collection.find({ userId: userId }).toArray();
 
         if (userData.length === 0) {
             console.log(`No data found for user ID: ${userId}`);
+        } else {
+            console.log(`Found ${userData.length} entries for user ID: ${userId}`);
         }
 
         res.json(userData);
     } catch (error) {
         console.error('Error processing user data:', error);
-        res.status(500).json({ error: 'Internal server error', details: error.message });
+        res.status(500).json({ 
+            error: 'Internal server error', 
+            details: error.message 
+        });
     }
 });
 
@@ -109,20 +102,24 @@ app.post('/set-email-preferences', async (req, res) => {
             return res.status(400).json({ message: 'User ID is required' });
         }
         
-        // Save preferences
-        let preferences;
-        try {
-            preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                preferences = {};
-            } else {
-                throw error;
-            }
-        }
-
-        preferences[userId] = { wantsReminders, userEmail, reminderTime };
-        await fs.writeFile('email_preferences.json', JSON.stringify(preferences));
+        // Get the email_preferences collection
+        const preferencesCollection = await getCollection('email_preferences');
+        
+        // Save or update preferences
+        const preference = { 
+            userId, 
+            wantsReminders, 
+            userEmail, 
+            reminderTime,
+            updatedAt: new Date()
+        };
+        
+        // Using upsert to either insert or update
+        await preferencesCollection.updateOne(
+            { userId },
+            { $set: preference },
+            { upsert: true }
+        );
 
         // Log email without actually sending (for demo purposes)
         console.log('Would send welcome email to:', userEmail);
@@ -130,23 +127,20 @@ app.post('/set-email-preferences', async (req, res) => {
         console.log('Reminder time:', reminderTime);
         
         // Log the "sent" email
-        let emailLogs;
-        try {
-            emailLogs = JSON.parse(await fs.readFile('email_logs.json', 'utf8'));
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                emailLogs = {};
-            } else {
-                throw error;
-            }
-        }
-
-        emailLogs[userId] = {
+        const emailLogsCollection = await getCollection('email_logs');
+        
+        const emailLog = {
+            userId,
             emailSent: true, // Consider it sent for demo purposes
-            sentAt: new Date().toISOString(),
+            sentAt: new Date(),
             demo: true
         };
-        await fs.writeFile('email_logs.json', JSON.stringify(emailLogs));
+        
+        await emailLogsCollection.updateOne(
+            { userId },
+            { $set: emailLog },
+            { upsert: true }
+        );
 
         res.json({ 
             message: 'Preferences saved successfully', 
@@ -155,23 +149,25 @@ app.post('/set-email-preferences', async (req, res) => {
     } catch (error) {
         console.error('Error:', error);
 
-        let emailLogs;
         try {
-            emailLogs = JSON.parse(await fs.readFile('email_logs.json', 'utf8'));
-        } catch (readError) {
-            if (readError.code === 'ENOENT') {
-                emailLogs = {};
-            } else {
-                throw readError;
-            }
+            // Log the error
+            const emailLogsCollection = await getCollection('email_logs');
+            
+            const errorLog = {
+                userId,
+                emailSent: false,
+                error: error.message,
+                errorAt: new Date()
+            };
+            
+            await emailLogsCollection.updateOne(
+                { userId },
+                { $set: errorLog },
+                { upsert: true }
+            );
+        } catch (logError) {
+            console.error('Error logging failure:', logError);
         }
-
-        emailLogs[userId] = {
-            emailSent: false,
-            error: error.message,
-            errorAt: new Date().toISOString()
-        };
-        await fs.writeFile('email_logs.json', JSON.stringify(emailLogs));
 
         res.status(500).json({ 
             message: 'Error saving preferences', 
@@ -239,18 +235,12 @@ app.use((err, req, res, next) => {
 app.get('/check-user/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        let preferences;
-        try {
-            preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                preferences = {};
-            } else {
-                throw error;
-            }
-        }
+        // Get the email_preferences collection
+        const preferencesCollection = await getCollection('email_preferences');
         
-        const userPreference = preferences[userId];
+        // Find user preferences
+        const userPreference = await preferencesCollection.findOne({ userId });
+        
         res.json({
             isNewUser: !userPreference,
             hasEmail: userPreference && userPreference.userEmail,
@@ -268,30 +258,27 @@ app.get('/check-user/:userId', async (req, res) => {
 app.get('/check-email-status/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        let emailLogs;
-        try {
-            emailLogs = JSON.parse(await fs.readFile('email_logs.json', 'utf8'));
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                emailLogs = {};
-            } else {
-                throw error;
-            }
-        }
+        // Get the email_logs collection
+        const emailLogsCollection = await getCollection('email_logs');
+        
+        // Find user email log
+        let emailLog = await emailLogsCollection.findOne({ userId });
         
         // If there's no status yet, create a demo one
-        if (!emailLogs[userId]) {
-            emailLogs[userId] = { 
+        if (!emailLog) {
+            const demoLog = { 
+                userId,
                 emailSent: true, 
-                sentAt: new Date().toISOString(),
+                sentAt: new Date(),
                 demo: true
             };
-            await fs.writeFile('email_logs.json', JSON.stringify(emailLogs));
+            
+            await emailLogsCollection.insertOne(demoLog);
+            emailLog = demoLog;
         }
         
-        const userEmailStatus = emailLogs[userId];
         res.json({
-            ...userEmailStatus,
+            ...emailLog,
             demo: true,
             message: 'Demo mode: Email functionality simulated'
         });
