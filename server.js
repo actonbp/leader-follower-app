@@ -237,7 +237,27 @@ async function scheduleReminders() {
         for (const [userId, { wantsReminders, userEmail, reminderTime }] of Object.entries(preferences)) {
             if (wantsReminders && reminderTime) {
                 const [hours, minutes] = reminderTime.split(':');
-                cron.schedule(`${minutes} ${hours} * * *`, () => sendReminderEmail(userEmail), {
+                cron.schedule(`${minutes} ${hours} * * *`, () => {
+                    // Call sendReminderEmails with a single email
+                    const transporter = nodemailer.createTransport({
+                        host: 'smtp.gmail.com',
+                        port: 465,
+                        secure: true,
+                        auth: {
+                            user: process.env.EMAIL_USER,
+                            pass: process.env.EMAIL_PASS
+                        }
+                    });
+                    
+                    transporter.sendMail({
+                        from: process.env.EMAIL_USER,
+                        to: userEmail,
+                        subject: 'LFIT Daily Reminder',
+                        text: 'Remember to complete your daily LFIT reflection!'
+                    }).catch(error => {
+                        console.error(`Error sending reminder to ${userEmail}:`, error);
+                    });
+                }, {
                     timezone: 'America/New_York'
                 });
             }

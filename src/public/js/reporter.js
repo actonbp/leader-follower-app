@@ -1,768 +1,302 @@
-// Add this to your existing main.js file or create a new reporter.js file
+// This file contains exported functions for use in main.js
 
-// Remove the import and Chart.register statements
-
-document.addEventListener('DOMContentLoaded', () => {
-    const loadDataBtn = document.getElementById('load-data-btn');
-    if (loadDataBtn) {
-        loadDataBtn.addEventListener('click', () => {
-            const userId = document.getElementById('reporter-user-id').value;
-            if (userId) {
-                fetch(`/get-user-data/${userId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Fetched data:', data); // Debugging statement
-                        if (data && data.length > 0) {
-                            document.getElementById('reporter-content').style.display = 'block';
-                            createIdentityTrajectoryChart(data);
-                            createGeneralIdentitySummary(data);
-                            createIdentitySwitchesChart(data);
-                            createDailyEventsSummary(data);
-                            createDayToDayDynamics(data);
-                            createIdentitySwitchesPieChart(data);
-                            
-                            setTimeout(() => {
-                                addChartDescriptions();
-                            }, 500);
-
-                            // Hide the load data button and show the generate PDF button
-                            document.getElementById('load-data-btn').style.display = 'none';
-                            document.getElementById('generate-pdf-btn').style.display = 'block';
-                        } else {
-                            throw new Error('No data found for this user ID.');
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error loading data:', error);
-                        alert(`Error loading data: ${error.message}. Please try again.`);
-                        document.getElementById('reporter-content').style.display = 'none';
-                    });
-            } else {
-                alert('Please enter your ID');
-            }
-        });
-    } else {
-        console.error('Element with id "load-data-btn" not found');
-    }
-});
-
-function addChartDescription(chartId, description) {
-    const chartContainer = document.getElementById(chartId).closest('.chart-container');
-    if (chartContainer) {
-        let descriptionElement = chartContainer.nextElementSibling;
-        if (descriptionElement && descriptionElement.classList.contains('chart-description')) {
-            descriptionElement.textContent = description;
-        } else {
-            descriptionElement = document.createElement('p');
-            descriptionElement.className = 'chart-description';
-            descriptionElement.textContent = description;
-            chartContainer.parentNode.insertBefore(descriptionElement, chartContainer.nextSibling);
+// Export the chart creation functions
+export function createIdentityTrajectoryChart(data) {
+    try {
+        const canvas = document.getElementById('identity-trajectory-chart');
+        if (!canvas) {
+            console.error('Canvas element not found: identity-trajectory-chart');
+            return;
         }
-    }
-}
-
-function createIdentityTrajectoryChart(data) {
-    const canvas = document.getElementById('identity-trajectory-chart');
-    if (!canvas) {
-        console.error('Canvas element not found: identity-trajectory-chart');
-        return;
-    }
-
-    // Destroy existing chart if it exists
-    const existingChart = Chart.getChart(canvas);
-    if (existingChart) {
-        existingChart.destroy();
-    }
-
-    // Group data by day and calculate average scores
-    const groupedData = data.reduce((acc, entry) => {
-        const date = new Date(entry.submitTime).toDateString();
-        if (!acc[date]) {
-            acc[date] = { 
-                date: new Date(entry.submitTime),
-                leaderScores: [],
-                followerScores: [],
-                entries: []
-            };
-        }
-        acc[date].leaderScores.push(parseFloat(entry.leaderScore));
-        acc[date].followerScores.push(parseFloat(entry.followerScore));
-        acc[date].entries.push(entry);
-        return acc;
-    }, {});
-
-    // Prepare data for charting
-    const chartData = Object.values(groupedData).flatMap(day => {
-        const avgLeader = day.leaderScores.reduce((a, b) => a + b, 0) / day.leaderScores.length;
-        const avgFollower = day.followerScores.reduce((a, b) => a + b, 0) / day.followerScores.length;
         
-        return day.entries.map((entry, index) => ({
-            x: new Date(day.date.getTime() + index * 3600000), // Add 1 hour offset for each entry
-            yLeader: parseFloat(entry.leaderScore),
-            yFollower: parseFloat(entry.followerScore),
-            avgLeader,
-            avgFollower
-        }));
-    });
-
-    chartData.sort((a, b) => a.x - b.x);
-
-    const ctx = canvas.getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            datasets: [
-                {
-                    label: 'Leader Identity',
-                    data: chartData.map(d => ({ x: d.x, y: d.yLeader })),
-                    borderColor: 'blue',
-                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Follower Identity',
-                    data: chartData.map(d => ({ x: d.x, y: d.yFollower })),
-                    borderColor: 'red',
-                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Average Leader Identity',
-                    data: chartData.map(d => ({ x: d.x, y: d.avgLeader })),
-                    borderColor: 'rgba(0, 0, 255, 0.5)',
-                    borderDash: [5, 5],
-                    fill: false,
-                    pointRadius: 0
-                },
-                {
-                    label: 'Average Follower Identity',
-                    data: chartData.map(d => ({ x: d.x, y: d.avgFollower })),
-                    borderColor: 'rgba(255, 0, 0, 0.5)',
-                    borderDash: [5, 5],
-                    fill: false,
-                    pointRadius: 0
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Leader-Follower Identity Trajectory'
-                }
-            },
-            scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        unit: 'day',
-                        displayFormats: {
-                            day: 'MMM dd'
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Identity Level'
-                    }
-                }
-            }
-        }
-    });
-}
-
-function createGeneralIdentitySummary(data) {
-    const leaderScores = data.map(d => parseFloat(d.leaderScore));
-    const followerScores = data.map(d => parseFloat(d.followerScore));
-
-    const leaderStats = calculateStats(leaderScores);
-    const followerStats = calculateStats(followerScores);
-
-    const canvas = document.getElementById('general-identity-chart');
-    if (canvas) {
-        const existingChart = Chart.getChart(canvas);
-        if (existingChart) {
-            existingChart.destroy();
-        }
-
         const ctx = canvas.getContext('2d');
+        
+        // Extract dates and identity scores
+        const dates = data.map(item => new Date(item.submitTime));
+        const leaderScores = data.map(item => parseFloat(item.leaderScore));
+        const followerScores = data.map(item => parseFloat(item.followerScore));
+        
+        // Create the chart
         new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
-                labels: ['Leader Identity', 'Follower Identity'],
-                datasets: [{
-                    label: 'Average Score',
-                    data: [leaderStats.mean, followerStats.mean],
-                    backgroundColor: ['rgba(0, 0, 255, 0.5)', 'rgba(255, 0, 0, 0.5)'],
-                    borderColor: ['rgba(0, 0, 255, 1)', 'rgba(255, 0, 0, 1)'],
-                    borderWidth: 1,
-                    errorBars: {
-                        'Leader Identity': {plus: leaderStats.stdDev, minus: leaderStats.stdDev},
-                        'Follower Identity': {plus: followerStats.stdDev, minus: followerStats.stdDev}
+                datasets: [
+                    {
+                        label: 'Leader Identity',
+                        data: dates.map((date, index) => ({ x: date, y: leaderScores[index] })),
+                        borderColor: '#FF6384',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Follower Identity',
+                        data: dates.map((date, index) => ({ x: date, y: followerScores[index] })),
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.1
                     }
-                }]
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                day: 'MMM d'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Identity Strength (%)'
+                        }
+                    }
+                },
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Average Leader and Follower Identity Scores',
-                        font: { size: 16 }
+                        text: 'Leader and Follower Identity Trajectory'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating identity trajectory chart:', error);
+    }
+}
+
+export function createGeneralIdentitySummary(data) {
+    try {
+        const canvas = document.getElementById('general-identity-chart');
+        if (!canvas) {
+            console.error('Canvas element not found: general-identity-chart');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Extract identity scores
+        const leaderScores = data.map(item => parseFloat(item.leaderScore));
+        const followerScores = data.map(item => parseFloat(item.followerScore));
+        
+        // Calculate statistics
+        const leaderMean = calculateMean(leaderScores);
+        const followerMean = calculateMean(followerScores);
+        const leaderStdDev = calculateStdDev(leaderScores, leaderMean);
+        const followerStdDev = calculateStdDev(followerScores, followerMean);
+        
+        // Create box plot
+        new Chart(ctx, {
+            type: 'boxplot',
+            data: {
+                labels: ['Leader Identity', 'Follower Identity'],
+                datasets: [
+                    {
+                        label: 'Identity Scores',
+                        backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)'],
+                        borderColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'],
+                        borderWidth: 1,
+                        outlierColor: '#999999',
+                        padding: 10,
+                        itemRadius: 0,
+                        data: [
+                            {
+                                min: Math.max(0, Math.min(...leaderScores)),
+                                q1: calculateQuantile(leaderScores, 0.25),
+                                median: calculateQuantile(leaderScores, 0.5),
+                                q3: calculateQuantile(leaderScores, 0.75),
+                                max: Math.max(...leaderScores),
+                                mean: leaderMean
+                            },
+                            {
+                                min: Math.max(0, Math.min(...followerScores)),
+                                q1: calculateQuantile(followerScores, 0.25),
+                                median: calculateQuantile(followerScores, 0.5),
+                                q3: calculateQuantile(followerScores, 0.75),
+                                max: Math.max(...followerScores),
+                                mean: followerMean
+                            }
+                        ]
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Identity Strength (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Distribution of Leader and Follower Identity Scores'
                     },
-                    legend: { display: false },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += context.parsed.y.toFixed(2);
-                                }
-                                return label;
-                            },
-                            afterBody: function(context) {
-                                const index = context[0].dataIndex;
-                                const stats = index === 0 ? leaderStats : followerStats;
+                                const dataset = context.dataset;
+                                const dataIndex = context.dataIndex;
+                                const dataPoint = dataset.data[dataIndex];
+                                
                                 return [
-                                    `Standard Deviation: ${stats.stdDev.toFixed(2)}`,
-                                    `Minimum: ${stats.min.toFixed(2)}`,
-                                    `Maximum: ${stats.max.toFixed(2)}`
+                                    `Min: ${dataPoint.min.toFixed(1)}`,
+                                    `Q1: ${dataPoint.q1.toFixed(1)}`,
+                                    `Median: ${dataPoint.median.toFixed(1)}`,
+                                    `Mean: ${dataPoint.mean.toFixed(1)}`,
+                                    `Q3: ${dataPoint.q3.toFixed(1)}`,
+                                    `Max: ${dataPoint.max.toFixed(1)}`
                                 ];
                             }
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        title: {
-                            display: true,
-                            text: 'Average Score',
-                            font: { size: 14 }
-                        },
-                        ticks: { font: { size: 12 } }
-                    },
-                    x: { ticks: { font: { size: 12 } } }
-                }
-            },
-            plugins: [{
-                id: 'errorBars',
-                afterDatasetsDraw(chart, args, options) {
-                    const {ctx, data, scales: {x, y}} = chart;
-                    ctx.save();
-                    data.datasets[0].data.forEach((datapoint, index) => {
-                        const errorBars = data.datasets[0].errorBars[data.labels[index]];
-                        if (errorBars) {
-                            const xPos = x.getPixelForValue(index);
-                            ctx.strokeStyle = data.datasets[0].borderColor[index];
-                            ctx.lineWidth = 2;
-                            
-                            // Draw vertical line
-                            ctx.beginPath();
-                            ctx.moveTo(xPos, y.getPixelForValue(datapoint - errorBars.minus));
-                            ctx.lineTo(xPos, y.getPixelForValue(datapoint + errorBars.plus));
-                            ctx.stroke();
-                            
-                            // Draw horizontal lines
-                            ctx.beginPath();
-                            ctx.moveTo(xPos - 5, y.getPixelForValue(datapoint - errorBars.minus));
-                            ctx.lineTo(xPos + 5, y.getPixelForValue(datapoint - errorBars.minus));
-                            ctx.moveTo(xPos - 5, y.getPixelForValue(datapoint + errorBars.plus));
-                            ctx.lineTo(xPos + 5, y.getPixelForValue(datapoint + errorBars.plus));
-                            ctx.stroke();
-                        }
-                    });
-                    ctx.restore();
-                }
-            }]
-        });
-    } else {
-        console.error('Canvas element not found: general-identity-chart');
-    }
-}
-
-function calculateStats(scores) {
-    const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
-    const stdDev = Math.sqrt(variance);
-    const min = Math.min(...scores);
-    const max = Math.max(...scores);
-    return { mean, stdDev, min, max };
-}
-
-function createIdentitySwitchesChart(data) {
-    let switches = 0;
-    for (let i = 1; i < data.length; i++) {
-        if ((data[i].leaderScore > data[i].followerScore && data[i-1].leaderScore <= data[i-1].followerScore) ||
-            (data[i].leaderScore < data[i].followerScore && data[i-1].leaderScore >= data[i-1].followerScore)) {
-            switches++;
-        }
-    }
-
-    const canvas = document.getElementById('identity-switches-chart');
-    if (canvas) {
-        // Destroy existing chart if it exists
-        const existingChart = Chart.getChart(canvas);
-        if (existingChart) {
-            existingChart.destroy();
-        }
-
-        const ctx = canvas.getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [switches, Math.max(20 - switches, 0)],
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.8)',
-                        'rgba(200, 200, 200, 0.3)'
-                    ],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                circumference: 180,
-                rotation: 270,
-                cutout: '80%',
-                plugins: {
-                    tooltip: {
-                        enabled: false
-                    },
-                    legend: {
-                        display: false
-                    },
-                    title: {
-                        display: true,
-                        text: 'Identity Switches',
-                        font: {
-                            size: 24
-                        }
-                    }
-                }
-            },
-            plugins: [{
-                id: 'centerText',
-                afterDraw: (chart) => {
-                    const ctx = chart.ctx;
-                    const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
-                    const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2 + 20;
-
-                    ctx.save();
-                    ctx.font = '30px Arial';
-                    ctx.fillStyle = 'rgba(255, 99, 132, 1)';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(switches.toString(), centerX, centerY);
-
-                    ctx.font = '16px Arial';
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                    ctx.fillText('switches', centerX, centerY + 25);
-                    ctx.restore();
-                }
-            }]
-        });
-    } else {
-        console.error('Canvas element not found: identity-switches-chart');
-    }
-}
-
-function calculateIdentityDynamics(data) {
-    const leaderScores = data.map(d => parseFloat(d.leaderScore));
-    const followerScores = data.map(d => parseFloat(d.followerScore));
-
-    // Calculate variability (standard deviation)
-    const leaderVariability = calculateStandardDeviation(leaderScores);
-    const followerVariability = calculateStandardDeviation(followerScores);
-
-    // Calculate identity switches
-    let activeLeader = 0;
-    let activeFollower = 0;
-    let liminal = 0;
-
-    data.forEach(d => {
-        const leaderScore = parseFloat(d.leaderScore);
-        const followerScore = parseFloat(d.followerScore);
-        const difference = Math.abs(leaderScore - followerScore);
-
-        if (difference <= 10) {
-            liminal++;
-        } else if (leaderScore > followerScore) {
-            activeLeader++;
-        } else {
-            activeFollower++;
-        }
-    });
-
-    const total = data.length;
-    return {
-        leaderVariability,
-        followerVariability,
-        activeLeaderPercent: (activeLeader / total) * 100,
-        activeFollowerPercent: (activeFollower / total) * 100,
-        liminalPercent: (liminal / total) * 100
-    };
-}
-
-function calculateStandardDeviation(values) {
-    const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-    const squareDiffs = values.map(value => Math.pow(value - mean, 2));
-    const avgSquareDiff = squareDiffs.reduce((sum, value) => sum + value, 0) / values.length;
-    return Math.sqrt(avgSquareDiff);
-}
-
-function createDayToDayDynamics(data) {
-    const dynamics = calculateIdentityDynamics(data);
-
-    // Update variability table
-    document.getElementById('leader-variability').textContent = dynamics.leaderVariability.toFixed(2);
-    document.getElementById('follower-variability').textContent = dynamics.followerVariability.toFixed(2);
-
-    // Add interpretation
-    const leaderInterpretation = getVariabilityInterpretation(dynamics.leaderVariability);
-    const followerInterpretation = getVariabilityInterpretation(dynamics.followerVariability);
-    
-    document.getElementById('variability-interpretation').innerHTML += `
-        <p>Leader variability: ${leaderInterpretation}</p>
-        <p>Follower variability: ${followerInterpretation}</p>
-    `;
-
-    // Create pie chart
-    const canvas = document.getElementById('identity-switch-pie-chart');
-    if (canvas) {
-        // Destroy existing chart if it exists
-        const existingChart = Chart.getChart(canvas);
-        if (existingChart) {
-            existingChart.destroy();
-        }
-
-        const ctx = canvas.getContext('2d');
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Active Leader', 'Active Follower', 'Liminal State'],
-                datasets: [{
-                    data: [
-                        dynamics.activeLeaderPercent,
-                        dynamics.activeFollowerPercent,
-                        dynamics.liminalPercent
-                    ],
-                    backgroundColor: ['blue', 'red', 'green']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Proportion of Days in Each Identity State',
-                        font: {
-                            size: 18
-                        }
-                    },
-                    legend: {
-                        labels: {
-                            font: {
-                                size: 14
-                            }
-                        }
-                    }
                 }
             }
         });
-    } else {
-        console.error('Canvas element not found: identity-switch-pie-chart');
+    } catch (error) {
+        console.error('Error creating general identity chart:', error);
     }
 }
 
-function getVariabilityInterpretation(variability) {
-    if (variability <= 10) {
-        return "Low variability";
-    } else if (variability <= 20) {
-        return "Moderate variability";
-    } else {
-        return "High variability";
-    }
-}
-
-function createDailyEventsSummary(data) {
-    const canvas = document.getElementById('event-strength-chart');
-    if (canvas) {
-        const existingChart = Chart.getChart(canvas);
-        if (existingChart) {
-            existingChart.destroy();
-        }
-
-        const ctx = canvas.getContext('2d');
-        const averageEventStrength = data.map(d => (parseFloat(d.novelty) + parseFloat(d.disruption) + parseFloat(d.ordinariness)) / 3);
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.map(d => new Date(d.submitTime).toLocaleDateString()),
-                datasets: [{
-                    label: 'Average Event Strength',
-                    data: averageEventStrength,
-                    backgroundColor: 'purple'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Average Daily Event Strength',
-                        font: {
-                            size: 16
-                        }
-                    },
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date',
-                            font: {
-                                size: 12
-                            }
-                        },
-                        ticks: {
-                            font: {
-                                size: 10
-                            },
-                            maxRotation: 90,
-                            minRotation: 90
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 7,
-                        title: {
-                            display: true,
-                            text: 'Event Strength',
-                            font: {
-                                size: 12
-                            }
-                        },
-                        ticks: {
-                            font: {
-                                size: 10
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    } else {
-        console.error('Canvas element not found: event-strength-chart');
-    }
-
-    const eventSummary = document.getElementById('event-summary');
-    eventSummary.innerHTML = `
-        <table>
-            <tr>
-                <th>Date</th>
-                <th>Event Description</th>
-                <th>Event Strength</th>
-            </tr>
-            ${data.map(d => `
-                <tr>
-                    <td>${d.submitTime}</td>
-                    <td>${d.eventDescription}</td>
-                    <td>${((parseFloat(d.novelty) + parseFloat(d.disruption) + parseFloat(d.ordinariness)) / 3).toFixed(2)}</td>
-                </tr>
-            `).join('')}
-        </table>
-    `;
-}
-
-function generateReporterPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Add header
-    doc.setFillColor(220, 220, 220);
-    doc.rect(0, 0, 210, 20, 'F');
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('LFIT Reporter Summary', 105, 15, { align: 'center' });
-
-    // Add user ID and date
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`User ID: ${document.getElementById('reporter-user-id').value}`, 20, 30);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 37);
-
-    // Add charts
-    const chartIds = [
-        'identity-trajectory-chart',
-        'general-identity-chart',
-        'identity-switches-chart',
-        'event-strength-chart',
-        'identity-switch-pie-chart'
-    ];
-
-    let yPosition = 50;
-    let currentPage = 1;
-
-    function addNextChart() {
-        if (chartIds.length === 0) {
-            // All charts have been added, add interpretations
-            addInterpretations();
+export function createIdentitySwitchesChart(data) {
+    try {
+        if (data.length < 2) {
+            console.warn('Not enough data points to calculate identity switches');
             return;
         }
-
-        const chartId = chartIds.shift();
-        const chart = document.getElementById(chartId);
-        if (chart) {
-            html2canvas(chart, { logging: false, useCORS: true }).then(canvas => {
-                return new Promise((resolve, reject) => {
-                    const imgData = canvas.toDataURL('image/png');
-                    try {
-                        doc.addImage(imgData, 'PNG', 10, yPosition, 190, 100);
-                        resolve();
-                    } catch (error) {
-                        console.error(`Error adding image for chart ${chartId}:`, error);
-                        reject(error);
-                    }
-                });
-            }).then(() => {
-                yPosition += 120;
-                if (yPosition > 220 || chartIds.length === 0) {
-                    doc.addPage();
-                    currentPage++;
-                    yPosition = 20;
-                }
-                addNextChart();
-            }).catch(error => {
-                console.error(`Error processing chart ${chartId}:`, error);
-                addNextChart(); // Continue with the next chart
-            });
-        } else {
-            console.error(`Chart not found: ${chartId}`);
-            addNextChart(); // Continue with the next chart
+        
+        const canvas = document.getElementById('identity-switches-chart');
+        if (!canvas) {
+            console.error('Canvas element not found: identity-switches-chart');
+            return;
         }
-    }
-
-    function addInterpretations() {
-        doc.addPage();
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Interpretations', 20, 20);
-
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        yPosition = 40;
-
-        // Add interpretations for each chart
-        doc.text('Identity Trajectory:', 20, yPosition);
-        yPosition += 10;
-        doc.text('This chart shows how your leader and follower identities have changed over time.', 30, yPosition);
-        yPosition += 20;
-
-        doc.text('Identity Switches:', 20, yPosition);
-        yPosition += 10;
-        doc.text('This chart displays the number of times your dominant identity switched between leader and follower.', 30, yPosition);
-        yPosition += 20;
-
-        // Add more interpretations for each chart...
-
-        // Add general interpretations
-        doc.text('General Interpretations:', 20, yPosition);
-        yPosition += 10;
-        doc.text('- High variability in identity scores indicates frequent changes in how you perceive your leader/follower role.', 30, yPosition);
-        yPosition += 10;
-        doc.text('- Consistent identity scores suggest a stable self-perception in your leader/follower role.', 30, yPosition);
-        yPosition += 10;
-        doc.text('- Frequent identity switches may indicate adaptability in different situations.', 30, yPosition);
-
-        // Finalize and save the PDF
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(10);
-            doc.text('Leader-Follower Identity Tracker (LFIT) - Confidential', 105, 285, { align: 'center' });
-            doc.text(`Page ${i} of ${pageCount}`, 105, 292, { align: 'center' });
-        }
-        doc.save('LFIT_Reporter_Summary.pdf');
-    }
-
-    addNextChart();
-}
-
-function openTab(evt, tabName) {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tabcontent");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tablinks");
-    for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-    }
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-}
-
-// Show the Identity Information tab by default
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('identity-tab').style.display = "block";
-});
-
-// Add this function to calculate liminal state frequency
-function calculateLiminalStateFrequency(data) {
-    const liminalStateCount = data.filter(entry => {
-        const leaderScore = parseFloat(entry.leaderScore);
-        const followerScore = parseFloat(entry.followerScore);
-        return Math.abs(leaderScore - followerScore) <= 25;
-    }).length;
-    return (liminalStateCount / data.length) * 100;
-}
-
-// Update the createIdentitySwitchesPieChart function
-function createIdentitySwitchesPieChart(data) {
-    const canvas = document.getElementById('identity-switch-pie-chart');
-    if (canvas) {
-        // Destroy existing chart if it exists
-        const existingChart = Chart.getChart(canvas);
-        if (existingChart) {
-            existingChart.destroy();
-        }
-
-        const leaderDominant = data.filter(entry => parseFloat(entry.leaderScore) > parseFloat(entry.followerScore) + 25).length;
-        const followerDominant = data.filter(entry => parseFloat(entry.followerScore) > parseFloat(entry.leaderScore) + 25).length;
-        const liminalState = data.length - leaderDominant - followerDominant;
-
+        
         const ctx = canvas.getContext('2d');
+        
+        // Sort data by date
+        data.sort((a, b) => new Date(a.submitTime) - new Date(b.submitTime));
+        
+        // Calculate identity switches and dates
+        let switchDates = [];
+        let switchValues = [];
+        let totalSwitches = 0;
+        
+        for (let i = 1; i < data.length; i++) {
+            const prevLeader = parseFloat(data[i-1].leaderScore);
+            const prevFollower = parseFloat(data[i-1].followerScore);
+            const currLeader = parseFloat(data[i].leaderScore);
+            const currFollower = parseFloat(data[i].followerScore);
+            
+            const prevDominant = prevLeader > prevFollower ? 'leader' : 'follower';
+            const currDominant = currLeader > currFollower ? 'leader' : 'follower';
+            
+            if (prevDominant !== currDominant) {
+                totalSwitches++;
+                switchDates.push(new Date(data[i].submitTime));
+                switchValues.push(totalSwitches);
+            }
+        }
+        
+        // Create the chart
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Cumulative Identity Switches',
+                    data: switchDates.map((date, index) => ({ x: date, y: switchValues[index] })),
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                    stepped: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                day: 'MMM d'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Number of Switches'
+                        },
+                        stepSize: 1
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Cumulative Leader-Follower Identity Switches'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating identity switches chart:', error);
+    }
+}
+
+export function createIdentitySwitchesPieChart(data) {
+    try {
+        if (data.length < 1) {
+            console.warn('Not enough data points for identity pie chart');
+            return;
+        }
+        
+        const canvas = document.getElementById('identity-switch-pie-chart');
+        if (!canvas) {
+            console.error('Canvas element not found: identity-switch-pie-chart');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Count days by dominant identity
+        let leaderDominant = 0;
+        let followerDominant = 0;
+        let liminalState = 0;
+        
+        for (const item of data) {
+            const leaderScore = parseFloat(item.leaderScore);
+            const followerScore = parseFloat(item.followerScore);
+            const difference = Math.abs(leaderScore - followerScore);
+            
+            if (difference < 10) {
+                liminalState++;
+            } else if (leaderScore > followerScore) {
+                leaderDominant++;
+            } else {
+                followerDominant++;
+            }
+        }
+        
+        // Create the pie chart
         new Chart(ctx, {
             type: 'pie',
             data: {
@@ -775,23 +309,420 @@ function createIdentitySwitchesPieChart(data) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                title: {
-                    display: true,
-                    text: 'Identity Dominance Distribution'
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Identity Dominance Distribution'
+                    }
                 }
             }
         });
-    } else {
-        console.error('Canvas element not found: identity-switch-pie-chart');
+    } catch (error) {
+        console.error('Error creating identity switches pie chart:', error);
     }
 }
 
-function addChartDescriptions() {
-    addChartDescription('identity-trajectory-chart', 'This chart shows how your leader and follower identities have changed over time. Higher values indicate a stronger identification with that role.');
-    addChartDescription('general-identity-chart', 'This bar chart displays the average leader and follower identity scores. The error bars represent one standard deviation above and below the mean, indicating the spread of scores.');
-    addChartDescription('identity-switches-chart', 'This chart shows the number of times your dominant identity switched between leader and follower.');
-    addChartDescription('event-strength-chart', 'This chart displays the average strength of daily events you experienced. Higher values indicate more impactful events that may have influenced your leader-follower identity.');
-    addChartDescription('identity-switch-pie-chart', 'This pie chart shows the proportion of days you identified more strongly as a leader, follower, or were in a liminal state (balanced between the two).');
+export function createDailyEventsSummary(data) {
+    try {
+        if (data.length < 1) {
+            console.warn('Not enough data points for events chart');
+            return;
+        }
+        
+        const canvas = document.getElementById('event-strength-chart');
+        if (!canvas) {
+            console.error('Canvas element not found: event-strength-chart');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Extract dates and event metrics
+        const dates = data.map(item => new Date(item.submitTime));
+        const noveltyScores = data.map(item => parseInt(item.novelty));
+        const disruptionScores = data.map(item => parseInt(item.disruption));
+        const ordinarinessScores = data.map(item => parseInt(item.ordinariness));
+        
+        // Create the chart
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Novelty',
+                        data: dates.map((date, index) => ({ x: date, y: noveltyScores[index] })),
+                        borderColor: '#FF6384',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Disruption',
+                        data: dates.map((date, index) => ({ x: date, y: disruptionScores[index] })),
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Extraordinariness',
+                        data: dates.map((date, index) => ({ x: date, y: ordinarinessScores[index] })),
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                day: 'MMM d'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        min: 1,
+                        max: 7,
+                        title: {
+                            display: true,
+                            text: 'Event Strength (1-7)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Daily Event Characteristics'
+                    }
+                }
+            }
+        });
+        
+        // Create event descriptions summary
+        createEventDescriptionsSummary(data);
+    } catch (error) {
+        console.error('Error creating daily events chart:', error);
+    }
 }
 
-export { createIdentityTrajectoryChart, createGeneralIdentitySummary, createIdentitySwitchesChart, createDailyEventsSummary, createDayToDayDynamics, createIdentitySwitchesPieChart, addChartDescriptions, generateReporterPDF, addChartDescription, openTab };
+export function createDayToDayDynamics(data) {
+    try {
+        if (data.length < 2) {
+            console.warn('Not enough data points for day-to-day dynamics');
+            return;
+        }
+        
+        // Calculate day-to-day variability
+        const leaderScores = data.map(item => parseFloat(item.leaderScore));
+        const followerScores = data.map(item => parseFloat(item.followerScore));
+        
+        let leaderDifferences = [];
+        let followerDifferences = [];
+        
+        for (let i = 1; i < data.length; i++) {
+            leaderDifferences.push(Math.abs(leaderScores[i] - leaderScores[i-1]));
+            followerDifferences.push(Math.abs(followerScores[i] - followerScores[i-1]));
+        }
+        
+        const leaderVariability = calculateMean(leaderDifferences);
+        const followerVariability = calculateMean(followerDifferences);
+        
+        // Display the variability in the table
+        document.getElementById('leader-variability').textContent = leaderVariability.toFixed(2);
+        document.getElementById('follower-variability').textContent = followerVariability.toFixed(2);
+        
+        // Display liminality information
+        displayLiminalityInfo(data);
+    } catch (error) {
+        console.error('Error calculating day-to-day dynamics:', error);
+    }
+}
+
+export function generateReporterPDF() {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add header
+        doc.setFillColor(220, 220, 220);
+        doc.rect(0, 0, 210, 20, 'F');
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('LFIT Reporter Summary', 105, 15, { align: 'center' });
+        
+        // Add user ID and date
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        const userId = document.getElementById('reporter-user-id').value;
+        doc.text(`User ID: ${userId}`, 20, 30);
+        doc.text(`Report generated: ${new Date().toLocaleDateString()}`, 20, 40);
+        
+        let yPos = 55;
+        
+        // Capture and add charts
+        const charts = ['identity-trajectory-chart', 'identity-switches-chart', 'identity-switch-pie-chart', 'general-identity-chart', 'event-strength-chart'];
+        
+        for (const chartId of charts) {
+            const canvas = document.getElementById(chartId);
+            if (canvas) {
+                const chartImg = canvas.toDataURL('image/png');
+                doc.text(getChartTitle(chartId), 20, yPos);
+                yPos += 10;
+                doc.addImage(chartImg, 'PNG', 20, yPos, 170, 85);
+                yPos += 95;
+                
+                // Add description
+                const description = getChartDescription(chartId);
+                if (description) {
+                    const splitText = doc.splitTextToSize(description, 170);
+                    doc.text(splitText, 20, yPos);
+                    yPos += splitText.length * 7 + 10;
+                }
+                
+                // Add page break if needed
+                if (yPos > 250 && chartId !== charts[charts.length - 1]) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+            }
+        }
+        
+        // Add identity variability data
+        doc.text('Day-to-Day Identity Variability:', 20, yPos);
+        yPos += 10;
+        doc.text(`Leader identity variability: ${document.getElementById('leader-variability').textContent}`, 30, yPos);
+        yPos += 7;
+        doc.text(`Follower identity variability: ${document.getElementById('follower-variability').textContent}`, 30, yPos);
+        yPos += 15;
+        
+        // Add footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(10);
+            doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+            doc.text('Leader-Follower Identity Tracker (LFIT)', 105, 285, { align: 'center' });
+        }
+        
+        // Save the PDF
+        doc.save(`LFIT_Report_${userId}.pdf`);
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF report. Please try again.');
+    }
+}
+
+export function addChartDescriptions() {
+    addChartDescription('identity-switch-pie-chart', 'This pie chart shows the proportion of days you identified more strongly as a leader, follower, or were in a liminal state (balanced between the two).');
+    addChartDescription('identity-trajectory-chart', 'This chart shows how your leader and follower identities have changed over time. Higher values indicate a stronger identification with that role.');
+    addChartDescription('general-identity-chart', 'This box plot displays the distribution of your leader and follower identity scores. The box represents the middle 50% of scores, with the line inside showing the median. The diamond marker shows the mean. The whiskers extend to the minimum and maximum scores.');
+    addChartDescription('identity-switches-chart', 'This chart shows the number of times your dominant identity switched between leader and follower.');
+    addChartDescription('event-strength-chart', 'This chart displays the average strength of daily events you experienced. Higher values indicate more impactful events that may have influenced your leader-follower identity.');
+}
+
+export function addChartDescription(chartId, description) {
+    const chartContainer = document.getElementById(chartId)?.closest('.chart-container');
+    if (chartContainer) {
+        let descriptionElement = chartContainer.querySelector('.chart-description');
+        if (!descriptionElement) {
+            descriptionElement = document.createElement('p');
+            descriptionElement.className = 'chart-description';
+            descriptionElement.style.fontSize = '0.9em';
+            descriptionElement.style.fontStyle = 'italic';
+            descriptionElement.style.color = '#555';
+            descriptionElement.style.marginTop = '5px';
+            chartContainer.appendChild(descriptionElement);
+        }
+        descriptionElement.textContent = description;
+    } else {
+        console.warn(`Chart container for ${chartId} not found`);
+    }
+}
+
+// Helper functions
+function calculateMean(arr) {
+    if (arr.length === 0) return 0;
+    return arr.reduce((sum, val) => sum + val, 0) / arr.length;
+}
+
+function calculateStdDev(arr, mean) {
+    if (arr.length <= 1) return 0;
+    const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
+    return Math.sqrt(variance);
+}
+
+function calculateQuantile(arr, q) {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const pos = (sorted.length - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    
+    if (sorted[base + 1] !== undefined) {
+        return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+    } else {
+        return sorted[base];
+    }
+}
+
+function createEventDescriptionsSummary(data) {
+    const eventSummaryElement = document.getElementById('event-summary');
+    if (!eventSummaryElement) {
+        console.error('Element not found: event-summary');
+        return;
+    }
+    
+    // Sort data by date
+    data.sort((a, b) => new Date(a.submitTime) - new Date(b.submitTime));
+    
+    // Create event summary HTML
+    let summaryHTML = '<h4>Event Descriptions by Date</h4>';
+    summaryHTML += '<div class="event-descriptions">';
+    
+    for (const item of data) {
+        const date = new Date(item.submitTime).toLocaleDateString();
+        summaryHTML += `
+            <div class="event-entry">
+                <div class="event-date">${date}</div>
+                <div class="event-metrics">
+                    <span class="badge badge-primary">Novelty: ${item.novelty}</span>
+                    <span class="badge badge-info">Disruption: ${item.disruption}</span>
+                    <span class="badge badge-success">Extraordinariness: ${item.ordinariness}</span>
+                </div>
+                <div class="event-text">${item.eventDescription || 'No description provided'}</div>
+            </div>
+        `;
+    }
+    
+    summaryHTML += '</div>';
+    eventSummaryElement.innerHTML = summaryHTML;
+    
+    // Add some CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        .event-descriptions {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .event-entry {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .event-date {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .event-metrics {
+            margin-bottom: 5px;
+        }
+        .event-text {
+            font-style: italic;
+            color: #555;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25em 0.4em;
+            font-size: 75%;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+            margin-right: 5px;
+        }
+        .badge-primary {
+            color: #fff;
+            background-color: #007bff;
+        }
+        .badge-info {
+            color: #fff;
+            background-color: #17a2b8;
+        }
+        .badge-success {
+            color: #fff;
+            background-color: #28a745;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function displayLiminalityInfo(data) {
+    try {
+        if (data.length < 2) {
+            console.warn('Not enough data points for liminality calculation');
+            return;
+        }
+        
+        // Calculate liminality score
+        let liminalPeriods = 0;
+        let totalPeriods = data.length - 1;
+        
+        for (let i = 1; i < data.length; i++) {
+            const prevLeader = parseFloat(data[i-1].leaderScore);
+            const prevFollower = parseFloat(data[i-1].followerScore);
+            const currLeader = parseFloat(data[i].leaderScore);
+            const currFollower = parseFloat(data[i].followerScore);
+            
+            if (Math.abs(currLeader - currFollower) <= 10 && Math.abs(prevLeader - prevFollower) <= 10) {
+                liminalPeriods++;
+            }
+        }
+        
+        const liminalityScore = (liminalPeriods / totalPeriods) * 100;
+        
+        // Display liminality information
+        const liminalitySection = document.getElementById('liminality-section');
+        if (liminalitySection) {
+            const liminalityText = `
+                <h3>Identity Liminality</h3>
+                <p>Identity liminality represents periods where leader and follower identities appear in a transitional or threshold state. This occurs when the difference between leader and follower identity scores is small (10% or less) for consecutive time points.</p>
+                <p>Your liminality score: ${liminalityScore.toFixed(2)}%</p>
+                <p>Interpretation:</p>
+                <ul>
+                    <li>0-20%: Low liminality - Your leader and follower identities are usually distinct.</li>
+                    <li>21-40%: Moderate liminality - You experience some periods of identity transition.</li>
+                    <li>41-60%: High liminality - Your identities are often in a state of flux.</li>
+                    <li>61-100%: Very high liminality - Your leader and follower identities are frequently intertwined.</li>
+                </ul>
+            `;
+            liminalitySection.innerHTML = liminalityText;
+        } else {
+            console.error('Element not found: liminality-section');
+        }
+    } catch (error) {
+        console.error('Error displaying liminality info:', error);
+    }
+}
+
+function getChartTitle(chartId) {
+    const titles = {
+        'identity-trajectory-chart': 'Leader and Follower Identity Trajectory',
+        'identity-switches-chart': 'Cumulative Leader-Follower Identity Switches',
+        'identity-switch-pie-chart': 'Identity Dominance Distribution',
+        'general-identity-chart': 'Distribution of Leader and Follower Identity Scores',
+        'event-strength-chart': 'Daily Event Characteristics'
+    };
+    return titles[chartId] || 'Chart';
+}
+
+function getChartDescription(chartId) {
+    const descriptions = {
+        'identity-trajectory-chart': 'This chart shows how your leader and follower identities have changed over time. Higher values indicate a stronger identification with that role.',
+        'identity-switches-chart': 'This chart shows the number of times your dominant identity switched between leader and follower.',
+        'identity-switch-pie-chart': 'This pie chart shows the proportion of days you identified more strongly as a leader, follower, or were in a liminal state (balanced between the two).',
+        'general-identity-chart': 'This box plot displays the distribution of your leader and follower identity scores. The box represents the middle 50% of scores, with the line inside showing the median. The diamond marker shows the mean. The whiskers extend to the minimum and maximum scores.',
+        'event-strength-chart': 'This chart displays the average strength of daily events you experienced. Higher values indicate more impactful events that may have influenced your leader-follower identity.'
+    };
+    return descriptions[chartId] || '';
+}
