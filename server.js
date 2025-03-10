@@ -22,7 +22,18 @@ app.get('/', (req, res) => {
 });
 
 // Import the database module
-const { getCollection } = require('./db');
+const { models, connectToDatabase, initializeDatabase } = require('./db-neon');
+
+// Connect to database when server starts
+(async () => {
+  try {
+    await connectToDatabase();
+    await initializeDatabase();
+    console.log('Database connected and initialized');
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+  }
+})();
 
 // Route to handle data submission
 app.post('/submit-data', async (req, res) => {
@@ -30,28 +41,23 @@ app.post('/submit-data', async (req, res) => {
         const data = req.body;
         const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
 
-        const dataToSave = {
-            userId: data.userId,
-            startTime: data.startTime,
-            submitTime: timestamp,
-            leaderScore: data.leaderPercent,
-            followerScore: data.followerPercent,
-            novelty: data.novelty,
-            disruption: data.disruption,
-            ordinariness: data.ordinariness,
-            eventDescription: data.eventDescription
-        };
-
-        // Get the user_data collection
-        const collection = await getCollection('user_data');
+        // Create a new user data record
+        const result = await models.UserData.create({
+          userId: data.userId,
+          startTime: data.startTime,
+          submitTime: timestamp,
+          leaderScore: data.leaderPercent.toString(), // Store as string to match original format
+          followerScore: data.followerPercent.toString(), // Store as string to match original format
+          novelty: data.novelty ? data.novelty.toString() : null,
+          disruption: data.disruption ? data.disruption.toString() : null,
+          ordinariness: data.ordinariness ? data.ordinariness.toString() : null,
+          eventDescription: data.eventDescription
+        });
         
-        // Insert the document
-        const result = await collection.insertOne(dataToSave);
-        
-        console.log(`Data saved with ID: ${result.insertedId}`);
+        console.log(`Data saved with ID: ${result.id}`);
         res.json({ 
             message: 'Data saved successfully', 
-            id: result.insertedId 
+            id: result.id 
         });
     } catch (err) {
         console.error('Error saving data:', err);
@@ -67,11 +73,11 @@ app.get('/get-user-data/:userId', async (req, res) => {
     const userId = req.params.userId;
 
     try {
-        // Get the user_data collection
-        const collection = await getCollection('user_data');
-        
-        // Find all documents for this user ID
-        const userData = await collection.find({ userId: userId }).toArray();
+        // Find all data for this user ID
+        const userData = await models.UserData.findAll({
+          where: { userId },
+          order: [['createdAt', 'ASC']]
+        });
 
         if (userData.length === 0) {
             console.log(`No data found for user ID: ${userId}`);
@@ -102,24 +108,26 @@ app.post('/set-email-preferences', async (req, res) => {
             return res.status(400).json({ message: 'User ID is required' });
         }
         
-        // Get the email_preferences collection
-        const preferencesCollection = await getCollection('email_preferences');
-        
-        // Save or update preferences
-        const preference = { 
-            userId, 
-            wantsReminders, 
-            userEmail, 
+        // Upsert email preferences
+        const [preference, created] = await models.EmailPreference.findOrCreate({
+          where: { userId },
+          defaults: {
+            wantsReminders: wantsReminders || false,
+            userEmail,
             reminderTime,
             updatedAt: new Date()
-        };
-        
-        // Using upsert to either insert or update
-        await preferencesCollection.updateOne(
-            { userId },
-            { $set: preference },
-            { upsert: true }
-        );
+          }
+        });
+
+        // If record existed, update it
+        if (!created) {
+          await preference.update({
+            wantsReminders: wantsReminders || false,
+            userEmail,
+            reminderTime,
+            updatedAt: new Date()
+          });
+        }
 
         // Log email without actually sending (for demo purposes)
         console.log('Would send welcome email to:', userEmail);
@@ -127,20 +135,23 @@ app.post('/set-email-preferences', async (req, res) => {
         console.log('Reminder time:', reminderTime);
         
         // Log the "sent" email
-        const emailLogsCollection = await getCollection('email_logs');
-        
-        const emailLog = {
-            userId,
+        const [emailLog, emailLogCreated] = await models.EmailLog.findOrCreate({
+          where: { userId },
+          defaults: {
             emailSent: true, // Consider it sent for demo purposes
             sentAt: new Date(),
             demo: true
-        };
-        
-        await emailLogsCollection.updateOne(
-            { userId },
-            { $set: emailLog },
-            { upsert: true }
-        );
+          }
+        });
+
+        // If record existed, update it
+        if (!emailLogCreated) {
+          await emailLog.update({
+            emailSent: true,
+            sentAt: new Date(),
+            demo: true
+          });
+        }
 
         res.json({ 
             message: 'Preferences saved successfully', 
@@ -151,20 +162,23 @@ app.post('/set-email-preferences', async (req, res) => {
 
         try {
             // Log the error
-            const emailLogsCollection = await getCollection('email_logs');
-            
-            const errorLog = {
-                userId,
+            const [errorLog, errorLogCreated] = await models.EmailLog.findOrCreate({
+              where: { userId },
+              defaults: {
                 emailSent: false,
                 error: error.message,
                 errorAt: new Date()
-            };
-            
-            await emailLogsCollection.updateOne(
-                { userId },
-                { $set: errorLog },
-                { upsert: true }
-            );
+              }
+            });
+
+            // If record existed, update it
+            if (!errorLogCreated) {
+              await errorLog.update({
+                emailSent: false,
+                error: error.message,
+                errorAt: new Date()
+              });
+            }
         } catch (logError) {
             console.error('Error logging failure:', logError);
         }
@@ -181,11 +195,12 @@ async function sendReminderEmails() {
     console.log('DEMO MODE: Would send reminder emails to users with preferences');
     
     try {
-        const preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
-        for (const [userId, { wantsReminders, userEmail }] of Object.entries(preferences)) {
-            if (wantsReminders) {
-                console.log(`DEMO: Would send reminder email to ${userEmail}`);
-            }
+        const preferences = await models.EmailPreference.findAll({
+          where: { wantsReminders: true }
+        });
+        
+        for (const pref of preferences) {
+            console.log(`DEMO: Would send reminder email to ${pref.userEmail}`);
         }
     } catch (error) {
         console.error('Error processing reminder emails:', error);
@@ -197,17 +212,20 @@ async function scheduleReminders() {
     console.log('Setting up demo reminder schedules (no actual emails will be sent)');
     
     try {
-        const preferences = JSON.parse(await fs.readFile('email_preferences.json', 'utf8'));
-        for (const [userId, { wantsReminders, userEmail, reminderTime }] of Object.entries(preferences)) {
-            if (wantsReminders && reminderTime) {
-                const [hours, minutes] = reminderTime.split(':');
-                console.log(`DEMO: Would schedule reminder for ${userEmail} at ${hours}:${minutes}`);
+        const preferences = await models.EmailPreference.findAll({
+          where: { wantsReminders: true }
+        });
+        
+        for (const pref of preferences) {
+            if (pref.reminderTime) {
+                const [hours, minutes] = pref.reminderTime.split(':');
+                console.log(`DEMO: Would schedule reminder for ${pref.userEmail} at ${hours}:${minutes}`);
                 
                 // In demo mode, we don't actually set up the cron job
                 // This avoids errors with missing email credentials
                 /*
                 cron.schedule(`${minutes} ${hours} * * *`, () => {
-                    console.log(`DEMO: Would send reminder email to ${userEmail}`);
+                    console.log(`DEMO: Would send reminder email to ${pref.userEmail}`);
                 }, {
                     timezone: 'America/New_York'
                 });
@@ -235,11 +253,10 @@ app.use((err, req, res, next) => {
 app.get('/check-user/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        // Get the email_preferences collection
-        const preferencesCollection = await getCollection('email_preferences');
-        
         // Find user preferences
-        const userPreference = await preferencesCollection.findOne({ userId });
+        const userPreference = await models.EmailPreference.findOne({
+          where: { userId }
+        });
         
         res.json({
             isNewUser: !userPreference,
@@ -258,27 +275,26 @@ app.get('/check-user/:userId', async (req, res) => {
 app.get('/check-email-status/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        // Get the email_logs collection
-        const emailLogsCollection = await getCollection('email_logs');
-        
         // Find user email log
-        let emailLog = await emailLogsCollection.findOne({ userId });
+        let emailLog = await models.EmailLog.findOne({
+          where: { userId }
+        });
         
         // If there's no status yet, create a demo one
         if (!emailLog) {
-            const demoLog = { 
+            emailLog = await models.EmailLog.create({ 
                 userId,
                 emailSent: true, 
                 sentAt: new Date(),
                 demo: true
-            };
-            
-            await emailLogsCollection.insertOne(demoLog);
-            emailLog = demoLog;
+            });
         }
         
+        // Convert to plain object for response
+        const plainLog = emailLog.get({ plain: true });
+        
         res.json({
-            ...emailLog,
+            ...plainLog,
             demo: true,
             message: 'Demo mode: Email functionality simulated'
         });

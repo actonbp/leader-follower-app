@@ -3,7 +3,7 @@
   "name": "leader-follower-app",
   "builds": [
     {
-      "src": "server.js",
+      "src": "server-neon.js",
       "use": "@vercel/node"
     },
     {
@@ -14,11 +14,11 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server.js"
+      "dest": "/server-neon.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/server.js"
+      "dest": "/server-neon.js"
     }
   ],
   "env": {

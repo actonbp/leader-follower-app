@@ -2,9 +2,13 @@
 
 ## Development Commands
 - **Run dev server**: `npm run dev` (with auto-reload)
+- **Run with Neon DB**: `npm run dev:neon` (with auto-reload)
 - **Start production**: `npm start`
+- **Start with Neon DB**: `npm run start:neon`
 - **Screenshots**: `npm run ai-capture` (creates screenshots in ai_captures/)
-- **Deploy**: `npm run vercel-deploy` (test) or `npm run vercel-prod` (production)
+- **Deploy with MongoDB**: `npm run vercel-deploy` (test) or `npm run vercel-prod` (production)
+- **Deploy with Neon**: `npm run vercel-deploy:neon` (test) or `npm run vercel-prod:neon` (production)
+- **Setup Vercel for Neon**: `npm run vercel-setup:neon`
 
 ## Code Style
 - **JS**: ES6, CommonJS imports, semicolons, camelCase for variables/functions
@@ -17,8 +21,11 @@
 - `/src/public/` - Frontend assets (HTML/CSS/JS)
 - `/src/routes/` - Express API routes
 - `/scripts/` - Utility scripts for screenshots
-- `server.js` - Main Express server
-- Data stored in `user_data.jsonl` and `email_preferences.json`
+- `server.js` - Main Express server (MongoDB version)
+- `server-neon.js` - Express server with Neon PostgreSQL
+- `db.js` - MongoDB connection
+- `db-neon.js` - Neon PostgreSQL connection and models
+- `migrate-to-neon.js` - Data migration from MongoDB to Neon
 
 ## Core Functionality
 This app helps users track their leader/follower identities over time using:

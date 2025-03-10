@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to set up MongoDB environment variable for Vercel
+# Script to set up Neon PostgreSQL environment variable for Vercel
 
 # Colors for better readability
 RED='\033[0;31m'
@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 
 # Display header
 echo -e "${BLUE}==================================================${NC}"
-echo -e "${BLUE}   Setting up MongoDB for Vercel Deployment       ${NC}"
+echo -e "${BLUE}   Setting up Neon PostgreSQL for Vercel Deployment${NC}"
 echo -e "${BLUE}==================================================${NC}"
 echo ""
 
@@ -44,26 +44,26 @@ ensure_login() {
   fi
 }
 
-# Function to setup MongoDB Atlas connection string
-setup_mongodb() {
-  echo -e "${BLUE}Setting up MongoDB Atlas connection string${NC}"
+# Function to setup Neon PostgreSQL connection string
+setup_neon() {
+  echo -e "${BLUE}Setting up Neon PostgreSQL connection string${NC}"
   echo ""
-  echo -e "${YELLOW}You need a MongoDB Atlas account and connection string.${NC}"
-  echo -e "If you don't have one, please follow the steps in VERCEL_SETUP.md"
+  echo -e "${YELLOW}You need a Neon PostgreSQL account and connection string.${NC}"
+  echo -e "If you don't have one, please follow the steps in NEON_SETUP.md"
   echo ""
   
-  # Read MongoDB connection string
-  read -p "Enter your MongoDB Atlas connection string: " MONGODB_URI
+  # Read Neon connection string
+  read -p "Enter your Neon PostgreSQL connection string: " NEON_DATABASE_URL
   
-  if [[ -z "$MONGODB_URI" ]]; then
+  if [[ -z "$NEON_DATABASE_URL" ]]; then
     echo -e "${RED}No connection string provided. Aborting.${NC}"
     exit 1
   fi
   
   # Check if the connection string looks valid
-  if [[ ! "$MONGODB_URI" == mongodb+srv://* ]]; then
-    echo -e "${YELLOW}Warning: The connection string doesn't start with 'mongodb+srv://'.${NC}"
-    echo -e "It might not be a valid MongoDB Atlas connection string."
+  if [[ ! "$NEON_DATABASE_URL" == postgresql://* ]]; then
+    echo -e "${YELLOW}Warning: The connection string doesn't start with 'postgresql://'.${NC}"
+    echo -e "It might not be a valid Neon PostgreSQL connection string."
     read -p "Do you want to continue anyway? (y/n): " CONTINUE
     if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
       echo -e "${RED}Aborting.${NC}"
@@ -71,7 +71,7 @@ setup_mongodb() {
     fi
   fi
   
-  echo -e "${BLUE}Setting MONGODB_URI environment variable for Vercel...${NC}"
+  echo -e "${BLUE}Setting NEON_DATABASE_URL environment variable for Vercel...${NC}"
   
   # Get the project name from vercel.json
   PROJECT_NAME=$(grep '"name":' vercel.json | head -1 | cut -d '"' -f 4)
@@ -79,9 +79,11 @@ setup_mongodb() {
     PROJECT_NAME="leader-follower-app"
   fi
   
-  # Add environment variable to Vercel project
+  # Add environment variable to Vercel project for all environments
   echo -e "${YELLOW}Adding environment variable to Vercel project ${PROJECT_NAME}...${NC}"
-  vercel env add MONGODB_URI production <<< "$MONGODB_URI"
+  vercel env add NEON_DATABASE_URL production <<< "$NEON_DATABASE_URL"
+  vercel env add NEON_DATABASE_URL preview <<< "$NEON_DATABASE_URL"
+  vercel env add NEON_DATABASE_URL development <<< "$NEON_DATABASE_URL"
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to add environment variable to Vercel.${NC}"
@@ -89,16 +91,38 @@ setup_mongodb() {
     exit 1
   fi
   
-  echo -e "${GREEN}Successfully added MONGODB_URI environment variable to Vercel!${NC}"
+  echo -e "${GREEN}Successfully added NEON_DATABASE_URL environment variable to Vercel!${NC}"
+  
+  # Ask for email configuration (optional)
+  echo -e "${BLUE}Do you want to set up email credentials? (y/n):${NC}"
+  read SETUP_EMAIL
+  if [[ $SETUP_EMAIL == "y" || $SETUP_EMAIL == "Y" ]]; then
+    read -p "Enter your email address: " EMAIL_USER
+    read -s -p "Enter your email app password: " EMAIL_PASS
+    echo ""
+
+    # Set email environment variables for all environments
+    echo -e "${YELLOW}Adding email environment variables...${NC}"
+    vercel env add EMAIL_USER production <<< "$EMAIL_USER"
+    vercel env add EMAIL_USER preview <<< "$EMAIL_USER"
+    vercel env add EMAIL_USER development <<< "$EMAIL_USER"
+
+    vercel env add EMAIL_PASS production <<< "$EMAIL_PASS"
+    vercel env add EMAIL_PASS preview <<< "$EMAIL_PASS"
+    vercel env add EMAIL_PASS development <<< "$EMAIL_PASS"
+    
+    echo -e "${GREEN}Successfully added email environment variables!${NC}"
+  fi
+  
   echo ""
   echo -e "${BLUE}Next steps:${NC}"
   echo -e "1. Deploy your app with: ${YELLOW}npm run vercel-deploy${NC} (for testing)"
   echo -e "   or ${YELLOW}npm run vercel-prod${NC} (for production)"
-  echo -e "2. Your app should now work with MongoDB!"
+  echo -e "2. Your app should now work with Neon PostgreSQL!"
 }
 
 # Main script execution
 ensure_login
-setup_mongodb
+setup_neon
 
 exit 0

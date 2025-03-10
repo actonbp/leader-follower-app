@@ -5,7 +5,9 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
+        "start:neon": "node server-neon.js",
         "dev": "nodemon server.js",
+        "dev:neon": "nodemon server-neon.js",
         "screenshots": "node scripts/take-screenshots.js",
         "capture-screens": "node scripts/capture-app-screens.js",
         "simple-capture": "node scripts/simple-capture.js",
@@ -17,7 +19,11 @@
         "vercel-deploy": "./scripts/deploy-vercel.sh deploy",
         "vercel-prod": "./scripts/deploy-vercel.sh prod",
         "vercel-setup": "./scripts/setup-vercel-env.sh",
-        "migrate-data": "node migrate-data.js"
+        "vercel-setup:neon": "./scripts/setup-vercel-neon-env.sh",
+        "migrate-data": "node migrate-data.js",
+        "migrate-to-neon": "node migrate-to-neon.js",
+        "vercel-deploy:neon": "cp vercel-neon.json vercel.json && vercel",
+        "vercel-prod:neon": "cp vercel-neon.json vercel.json && vercel --prod"
     },
     "dependencies": {
         "body-parser": "^1.19.0",
@@ -26,7 +32,10 @@
         "moment": "^2.29.1",
         "mongodb": "^6.14.2",
         "node-cron": "^3.0.3",
-        "nodemailer": "^6.9.14"
+        "nodemailer": "^6.9.14",
+        "pg": "^8.13.3",
+        "pg-hstore": "^2.3.4",
+        "sequelize": "^6.37.6"
     },
     "devDependencies": {
         "nodemon": "^2.0.15",
