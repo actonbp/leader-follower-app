@@ -306,54 +306,198 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDataBtn.addEventListener('click', loadReporterData);
     }
 
-    function loadReporterData() {
-        const userId = document.getElementById('reporter-user-id').value;
-        if (userId) {
-            console.log('Fetching data for user:', userId);
-            fetch(`/get-user-data/${userId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Received data:', data);
-                    if (data && Array.isArray(data) && data.length > 0) {
-                        document.getElementById('reporter-content').style.display = 'block';
-                        
-                        // Show the identity tab by default
-                        document.getElementById('identity-tab').style.display = 'block';
-                        document.getElementById('identity-tab-btn').className += " active";
-                        
-                        createIdentityTrajectoryChart(data);
-                        createGeneralIdentitySummary(data);
-                        createIdentitySwitchesChart(data);
-                        createDailyEventsSummary(data);
-                        createDayToDayDynamics(data);
-                        createIdentitySwitchesPieChart(data);
-
-                        // Add a delay before adding chart descriptions
-                        setTimeout(() => {
-                            addChartDescriptions();
-                        }, 500);
-
-                        // Hide the load data button and show the generate PDF button
-                        document.getElementById('load-data-btn').style.display = 'none';
-                        document.getElementById('generate-pdf-btn').style.display = 'block';
-                        document.getElementById('generate-pdf-btn').addEventListener('click', generateReporterPDF);
-                    } else {
-                        throw new Error('No data found for this user ID.');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error loading data:', error);
-                    alert(`Error loading data: ${error.message}. Please try again.`);
-                    document.getElementById('reporter-content').style.display = 'none';
+    async function loadReporterData() {
+        try {
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'block';
+            }
+            
+            // Get user ID from input
+            const userIdInput = document.getElementById('reporter-user-id');
+            if (!userIdInput) {
+                console.error('User ID input element not found');
+                alert('Error: Could not find the user ID input field.');
+                return;
+            }
+            
+            const userId = userIdInput.value.trim();
+            if (!userId) {
+                alert('Please enter a user ID');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                return;
+            }
+            
+            // Store user ID in local storage
+            localStorage.setItem('reporterUserId', userId);
+            
+            // Fetch user data - use the correct endpoint
+            console.log(`Fetching data for user ID: ${userId}`);
+            const response = await fetch(`/get-user-data/${userId}`);
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('Received data:', data);
+            
+            if (!data || data.length === 0) {
+                alert('No data found for this user ID. Please check the ID and try again.');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                return;
+            }
+            
+            // Show the reporter content
+            const reporterContent = document.getElementById('reporter-content');
+            if (reporterContent) {
+                reporterContent.style.display = 'block';
+            }
+            
+            // Show the identity tab by default
+            const identityTab = document.getElementById('identity-tab');
+            if (identityTab) {
+                identityTab.style.display = 'block';
+            }
+            
+            const identityTabBtn = document.getElementById('identity-tab-btn');
+            if (identityTabBtn) {
+                identityTabBtn.className += " active";
+            }
+            
+            // Hide the load data button and show the generate PDF button
+            const loadDataBtn = document.getElementById('load-data-btn');
+            if (loadDataBtn) {
+                loadDataBtn.style.display = 'none';
+            }
+            
+            const generatePdfBtn = document.getElementById('generate-pdf-btn');
+            if (generatePdfBtn) {
+                generatePdfBtn.style.display = 'block';
+                generatePdfBtn.addEventListener('click', function() {
+                    const reporter = import('./reporter.js').then(module => {
+                        module.generateReporterPDF();
+                    });
                 });
-        } else {
-            alert('Please enter your ID');
+            }
+            
+            // Create charts with error handling
+            try {
+                // Make sure Chart.js is loaded
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js is not loaded. Attempting to load it dynamically.');
+                    await loadChartJsDynamically();
+                }
+                
+                // Import the reporter module
+                const reporter = await import('./reporter.js');
+                
+                // Create charts with try/catch for each
+                try {
+                    reporter.createIdentityTrajectoryChart(data);
+                    console.log('Identity trajectory chart created successfully');
+                } catch (error) {
+                    console.error('Error creating identity trajectory chart:', error);
+                }
+                
+                try {
+                    reporter.createGeneralIdentitySummary(data);
+                    console.log('General identity summary created successfully');
+                } catch (error) {
+                    console.error('Error creating general identity summary:', error);
+                }
+                
+                try {
+                    reporter.createIdentitySwitchesChart(data);
+                    console.log('Identity switches chart created successfully');
+                } catch (error) {
+                    console.error('Error creating identity switches chart:', error);
+                }
+                
+                try {
+                    reporter.createIdentitySwitchesPieChart(data);
+                    console.log('Identity switches pie chart created successfully');
+                } catch (error) {
+                    console.error('Error creating identity switches pie chart:', error);
+                }
+                
+                try {
+                    reporter.createDailyEventsSummary(data);
+                    console.log('Daily events summary created successfully');
+                } catch (error) {
+                    console.error('Error creating daily events summary:', error);
+                }
+                
+                try {
+                    reporter.createDayToDayDynamics(data);
+                    console.log('Day-to-day dynamics created successfully');
+                } catch (error) {
+                    console.error('Error creating day-to-day dynamics:', error);
+                }
+                
+                // Add chart descriptions
+                try {
+                    reporter.addChartDescriptions();
+                    console.log('Chart descriptions added successfully');
+                } catch (error) {
+                    console.error('Error adding chart descriptions:', error);
+                }
+                
+            } catch (chartError) {
+                console.error('Error creating charts:', chartError);
+                alert('There was an error creating the charts. Please check the console for details.');
+            }
+            
+        } catch (error) {
+            console.error('Error loading reporter data:', error);
+            alert(`Error loading data: ${error.message}`);
+        } finally {
+            // Hide loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
         }
+    }
+
+    // Helper function to dynamically load Chart.js if needed
+    async function loadChartJsDynamically() {
+        return new Promise((resolve, reject) => {
+            if (typeof Chart !== 'undefined') {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js';
+            script.onload = () => {
+                console.log('Chart.js loaded dynamically');
+                
+                // Also load the BoxPlot plugin
+                const boxPlotScript = document.createElement('script');
+                boxPlotScript.src = 'https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@3.0.0/build/Chart.BoxPlot.min.js';
+                boxPlotScript.onload = () => {
+                    console.log('BoxPlot plugin loaded dynamically');
+                    resolve();
+                };
+                boxPlotScript.onerror = (error) => {
+                    console.error('Failed to load BoxPlot plugin:', error);
+                    // Continue anyway, as we have fallbacks
+                    resolve();
+                };
+                document.head.appendChild(boxPlotScript);
+            };
+            script.onerror = (error) => {
+                console.error('Failed to load Chart.js:', error);
+                reject(error);
+            };
+            document.head.appendChild(script);
+        });
     }
 
     function addChartDescriptions() {

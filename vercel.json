@@ -4,10 +4,7 @@
   "builds": [
     {
       "src": "server-neon.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["src/**", "*.js", "*.json"]
-      }
+      "use": "@vercel/node"
     },
     {
       "src": "src/public/**",
@@ -15,6 +12,10 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server-neon.js"
+    },
     {
       "src": "/(.*)",
       "dest": "/server-neon.js"
