@@ -2,29 +2,135 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leader-Follower Identity Tracker (LFIT)</title>
+    
+    <!-- Social Media and SEO Meta Tags -->
+    <meta name="description" content="Track and visualize your leader and follower identities over time with the Leader-Follower Identity Tracker (LFIT)">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lfit.me/">
+    <meta property="og:title" content="Leader-Follower Identity Tracker (LFIT)">
+    <meta property="og:description" content="A companion tool to help track the ebb and flow of leader and follower identities over time.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/Bryan-Acton/leader-follower-app/main/screenshots/2025-03-10/01_main_welcome.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://lfit.me/">
+    <meta property="twitter:title" content="Leader-Follower Identity Tracker (LFIT)">
+    <meta property="twitter:description" content="A companion tool to help track the ebb and flow of leader and follower identities over time.">
+    <meta property="twitter:image" content="https://raw.githubusercontent.com/Bryan-Acton/leader-follower-app/main/screenshots/2025-03-10/01_main_welcome.png">
+    
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/flatly/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    
+    <!-- jQuery and Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="/css/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <!-- Chart.js and plugins - specific versions for compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <!-- Global shims for module compatibility -->
+    <script>
+        // Create global shims for Node.js module system
+        window.require = function(module) {
+            console.warn('Browser require() called for: ' + module);
+            return {}; // Return empty object to prevent errors
+        };
+        
+        window.exports = {};
+        window.module = { exports: window.exports };
+    </script>
+    
+    <!-- PDF generation libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@3.0.0/build/Chart.BoxPlot.min.js"></script>
+    
+    <!-- Loading indicator -->
+    <style>
+        #loading-indicator {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+    </style>
+    
+    <!-- Main application script - load as module -->
     <script type="module" src="/js/main.js"></script>
-    <script type="module" src="/js/reporter.js"></script>
+    
+    <!-- Load reporter.js as regular script instead of a module for better compatibility -->
+    <script src="/js/reporter.js"></script>
+    
+    <!-- Set up the generate PDF function -->
+    <script>
+        window.generatePDFReport = function() {
+            console.log('Generating PDF report');
+            if (typeof generateReporterPDF === 'function') {
+                generateReporterPDF();
+            } else {
+                console.error('generateReporterPDF function not found');
+                alert('Error: PDF generation function not available. Please refresh the page and try again.');
+            }
+        };
+    </script>
 </head>
 
 <body>
+    <div id="loading-indicator">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p class="mt-2">Loading data and creating charts...</p>
+    </div>
+    
     <div class="container">
         <div id="main-welcome-page" class="page text-center mt-5" style="display: none;">
             <h1 class="mb-4">Welcome to the Leader-Follower Identity Tracker (LFIT)</h1>
             <div class="option-buttons d-flex justify-content-center mb-4">
-                <button id="reflector-btn" class="btn btn-primary mx-2">LFIT-Reflector</button>
-                <button id="reporter-btn" class="btn btn-primary mx-2">LFIT-Reporter</button>
+                <button id="reflector-btn" class="btn btn-primary mx-2" onclick="openReflector()">LFIT-Reflector</button>
+                <button id="reporter-btn" class="btn btn-primary mx-2" onclick="openReporter()">LFIT-Reporter</button>
             </div>
+            
+            <script>
+                // Direct inline functions to handle button clicks
+                function openReflector() {
+                    console.log('Opening reflector section');
+                    document.getElementById('main-welcome-page').style.display = 'none';
+                    const reflectorSection = document.getElementById('reflector-section');
+                    reflectorSection.style.display = 'block';
+                    
+                    // Find welcome-page inside reflector-section and show it
+                    const pages = reflectorSection.querySelectorAll('.page');
+                    pages.forEach(page => page.style.display = 'none');
+                    const welcomePage = document.getElementById('welcome-page');
+                    if (welcomePage) {
+                        welcomePage.style.display = 'block';
+                    }
+                }
+                
+                function openReporter() {
+                    console.log('Opening reporter section');
+                    document.getElementById('main-welcome-page').style.display = 'none';
+                    document.getElementById('reporter-section').style.display = 'block';
+                    // Clear any previous data
+                    document.getElementById('reporter-content').style.display = 'none';
+                    const reporterUserId = document.getElementById('reporter-user-id');
+                    if (reporterUserId) {
+                        reporterUserId.value = '';
+                    }
+                }
+            </script>
             <img src="/images/start_here.png" alt="Start Here" class="start-here-image">
         </div>
 
@@ -39,14 +145,52 @@
                     <li>Final two characters of the place you were born (e.g., Copenhagen --&gt; EN)</li>
                 </ul>
                 <input type="text" id="user-id" class="form-control mb-3" placeholder="Enter your 6-digit ID">
-                <button id="start-btn" class="btn btn-success">Start</button>
+                <button id="start-btn" class="btn btn-success" onclick="startReflectorProcess()">Start</button>
+                
+                <script>
+                    function startReflectorProcess() {
+                        const userId = document.getElementById('user-id').value;
+                        if (!userId) {
+                            alert('Please enter your ID');
+                            return;
+                        }
+                        
+                        console.log('Starting reflector process with ID:', userId);
+                        fetch(`/check-user/${userId}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.isNewUser || !data.hasEmail) {
+                                    document.getElementById('welcome-page').style.display = 'none';
+                                    document.getElementById('email-preferences').style.display = 'block';
+                                } else {
+                                    window.userData = window.userData || {};
+                                    window.userData.userId = userId;
+                                    window.userData.startTime = new Date().toISOString();
+                                    document.getElementById('welcome-page').style.display = 'none';
+                                    document.getElementById('instructions-page').style.display = 'block';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('There was an error checking user status. Please try again.');
+                            });
+                    }
+                </script>
             </div>
 
             <div id="instructions-page" class="page" style="display: none;">
                 <h2>Use the LFIT to Explore the Complex Dynamics between your Leader and Follower Identities</h2>
                 <p>Spend 3 minutes per day to gain insights into the changing nature of your leader and follower identities. Engage in the following short reflections at the end of each day and over a period of at least two consecutive weeks.</p>
                 <p>Both leadership and followership are not only roles or positions. They concern how you feel about the interactions with others. When answering the following questions, keep in mind that both leadership and followership are equally valuable.</p>
-                <button id="next-to-grid-btn" class="btn btn-success">Next</button>
+                <button id="next-to-grid-btn" class="btn btn-success" onclick="showGridPage()">Next</button>
+                
+                <script>
+                    function showGridPage() {
+                        console.log('Moving to grid page');
+                        document.getElementById('instructions-page').style.display = 'none';
+                        document.getElementById('grid-page').style.display = 'block';
+                    }
+                </script>
             </div>
 
             <div id="grid-page" class="page" style="display: none;">
@@ -66,14 +210,57 @@
                     <div class="scale top-left">Very much so</div>
                     <div class="point" id="point"></div>
                 </div>
-                <button id="grid-submit-btn" class="btn btn-success mt-3" disabled="">Next</button>
+                <button id="grid-submit-btn" class="btn btn-success mt-3" onclick="submitGridAndContinue()" disabled="">Next</button>
+                
+                <script>
+                    // Set up grid click handler
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const grid = document.getElementById('grid');
+                        const point = document.getElementById('point');
+                        const gridSubmitBtn = document.getElementById('grid-submit-btn');
+                        
+                        grid.addEventListener('click', function(e) {
+                            const rect = grid.getBoundingClientRect();
+                            let x = e.clientX - rect.left;
+                            let y = rect.bottom - e.clientY;
+                            
+                            x = Math.max(0, Math.min(x, rect.width));
+                            y = Math.max(0, Math.min(y, rect.height));
+                            
+                            window.userData = window.userData || {};
+                            window.userData.followerPercent = (x / rect.width * 100).toFixed(2);
+                            window.userData.leaderPercent = (y / rect.height * 100).toFixed(2);
+                            
+                            point.style.left = `${x}px`;
+                            point.style.top = `${rect.height - y}px`;
+                            point.style.display = 'block';
+                            
+                            gridSubmitBtn.disabled = false;
+                        });
+                    });
+                    
+                    function submitGridAndContinue() {
+                        console.log('Grid submitted, moving to event reflection');
+                        document.getElementById('grid-page').style.display = 'none';
+                        document.getElementById('event-reflection-page').style.display = 'block';
+                    }
+                </script>
             </div>
 
             <div id="event-reflection-page" class="page" style="display: none;">
                 <h2>Today's most important experience – your reflection</h2>
                 <p>Now please think about the most important event that happened to you during the day. Please describe the event you are thinking about in a few sentences.</p>
                 <textarea id="event-description" class="form-control mb-3" placeholder="Describe the event..."></textarea>
-                <button id="next-to-rating-btn" class="btn btn-success">Next</button>
+                <button id="next-to-rating-btn" class="btn btn-success" onclick="moveToEventRating()">Next</button>
+                
+                <script>
+                    function moveToEventRating() {
+                        window.userData = window.userData || {};
+                        window.userData.eventDescription = document.getElementById('event-description').value;
+                        document.getElementById('event-reflection-page').style.display = 'none';
+                        document.getElementById('event-rating-page').style.display = 'block';
+                    }
+                </script>
             </div>
 
             <div id="event-rating-page" class="page" style="display: none;">
@@ -106,14 +293,93 @@
                         <span>7 (Very extraordinary)</span>
                     </div>
                 </div>
-                <button id="questions-submit-btn" class="btn btn-success">Submit</button>
+                <button id="questions-submit-btn" class="btn btn-success" onclick="submitRatingsAndData()">Submit</button>
+                
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Set up event listeners for range inputs
+                        ['novelty', 'disruption', 'ordinariness'].forEach(id => {
+                            const input = document.getElementById(id);
+                            const valueSpan = document.getElementById(`${id}-value`);
+                            if (input && valueSpan) {
+                                input.addEventListener('input', () => {
+                                    valueSpan.textContent = input.value;
+                                });
+                            }
+                        });
+                    });
+                    
+                    function submitRatingsAndData() {
+                        window.userData = window.userData || {};
+                        window.userData.novelty = document.getElementById('novelty').value;
+                        window.userData.disruption = document.getElementById('disruption').value;
+                        window.userData.ordinariness = document.getElementById('ordinariness').value;
+                        
+                        console.log('Submitting user data:', window.userData);
+                        
+                        fetch('/submit-data', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(window.userData),
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Success:', data);
+                            document.getElementById('event-rating-page').style.display = 'none';
+                            document.getElementById('completion-page').style.display = 'block';
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                            alert(`There was an error submitting your data: ${error.message}. Please try again.`);
+                        });
+                    }
+                </script>
             </div>
 
             <div id="completion-page" class="page" style="display: none;">
                 <h2>Thank you for today's short daily reflection.</h2>
                 <p>We recommend you to engage in the daily reflections for a minimum of two consecutive weeks. In that sense, see you again tomorrow 😊</p>
-                <button id="new-rating-btn" class="btn btn-success">Make Another Rating</button>
-                <button id="finish-btn" class="btn btn-success">Finish</button>
+                <button id="new-rating-btn" class="btn btn-success" onclick="startNewRating()">Make Another Rating</button>
+                <button id="finish-btn" class="btn btn-success" onclick="finishAndReturnToMain()">Finish</button>
+                
+                <script>
+                    function startNewRating() {
+                        window.userData = window.userData ? { userId: window.userData.userId } : {};
+                        window.userData.startTime = new Date().toISOString();
+                        
+                        // Reset the grid point
+                        const point = document.getElementById('point');
+                        if (point) {
+                            point.style.display = 'none';
+                        }
+                        
+                        // Disable the submit button
+                        const gridSubmitBtn = document.getElementById('grid-submit-btn');
+                        if (gridSubmitBtn) {
+                            gridSubmitBtn.disabled = true;
+                        }
+                        
+                        // Show grid page for new rating
+                        document.getElementById('completion-page').style.display = 'none';
+                        document.getElementById('grid-page').style.display = 'block';
+                    }
+                    
+                    function finishAndReturnToMain() {
+                        console.log('Finishing session and returning to main page');
+                        document.getElementById('reflector-section').style.display = 'none';
+                        document.getElementById('main-welcome-page').style.display = 'block';
+                        
+                        // Reset user data
+                        window.userData = {};
+                    }
+                </script>
             </div>
 
             <div id="email-preferences" class="page" style="display: none;">
@@ -127,7 +393,25 @@
                 <br>
                 <input type="email" id="user-email" placeholder="Enter your email">
                 <p>We'll use this email to send you reminders and important updates about the study.</p>
-                <button id="save-email-preferences" class="btn btn-success">Save Preferences</button>
+                <div class="button-group mt-3">
+                    <button id="save-email-preferences" class="btn btn-success">Save Preferences</button>
+                    <button id="skip-email-btn" class="btn btn-secondary ml-2" onclick="skipEmailSetup()">Skip for Now</button>
+                </div>
+                
+                <script>
+                    function skipEmailSetup() {
+                        console.log('Skipping email setup');
+                        // Initialize userData with just the ID and timestamp
+                        const userId = document.getElementById('user-id').value;
+                        window.userData = window.userData || {};
+                        window.userData.userId = userId;
+                        window.userData.startTime = new Date().toISOString();
+                        
+                        // Skip directly to instructions
+                        document.getElementById('email-preferences').style.display = 'none';
+                        document.getElementById('instructions-page').style.display = 'block';
+                    }
+                </script>
             </div>
         </div>
 
@@ -136,29 +420,50 @@
             <p>Enter your ID to view your data:</p>
             <input type="text" id="reporter-user-id" placeholder="Enter your ID">
             <button id="load-data-btn" class="btn btn-success">Load Data</button>
+            
             <div id="reporter-content" style="display: none;">
                 <div class="tab">
-                    <button class="tablinks active" onclick="openTab(event, 'identity-tab')">Identity Information</button>
-                    <button class="tablinks" onclick="openTab(event, 'events-tab')">Events Information</button>
+                    <button class="tablinks active" id="identity-tab-btn" onclick="openTab('identity-tab')">Identity Information</button>
+                    <button class="tablinks" id="events-tab-btn" onclick="openTab('events-tab')">Events Information</button>
                 </div>
                 
-                <div id="identity-tab" class="tabcontent" style="display: block;">
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                <script>
+                    function openTab(tabId) {
+                        // Hide all tab content
+                        const tabcontent = document.getElementsByClassName("tabcontent");
+                        for (let i = 0; i < tabcontent.length; i++) {
+                            tabcontent[i].style.display = "none";
+                        }
+                        
+                        // Remove active class from all tab buttons
+                        const tablinks = document.getElementsByClassName("tablinks");
+                        for (let i = 0; i < tablinks.length; i++) {
+                            tablinks[i].className = tablinks[i].className.replace(" active", "");
+                        }
+                        
+                        // Show the selected tab and add active class to button
+                        document.getElementById(tabId).style.display = "block";
+                        event.currentTarget.className += " active";
+                    }
+                </script>
+                
+                <div id="identity-tab" class="tabcontent">
+                    <div class="chart-container">
                         <canvas id="identity-trajectory-chart"></canvas>
                     </div>
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                    <div class="chart-container">
                         <canvas id="identity-switches-chart"></canvas>
                     </div>
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px; margin-bottom: 20px;">
+                    <div class="chart-container">
                         <canvas id="identity-switch-pie-chart"></canvas>
                     </div>
                     <div id="general-identity">
                         <h3>Your General Leader and Follower Identity</h3>
-                        <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px;">
+                        <div class="chart-container">
                             <canvas id="general-identity-chart"></canvas>
                         </div>
                     </div>
-                    <div id="liminality-section" class="chart-container" style="position: relative; height: auto; width: 100%; max-width: 600px; margin-bottom: 20px;"></div>
+                    <div id="liminality-section" class="chart-container"></div>
                     <div id="day-to-day-dynamics">
                         <h3>Your Day-to-Day Identity Dynamics</h3>
                         <p>This part shows how much your leader and follower identities varied from day to day, and how much you engaged in leader-follower identity switching.</p>
@@ -188,13 +493,12 @@
                 <div id="events-tab" class="tabcontent" style="display: none;">
                     <div id="daily-events">
                         <h3>Your Daily Events</h3>
-                        <div class="chart-container" style="position: relative; height: 300px; width: 100%; max-width: 600px;">
+                        <div class="chart-container">
                             <canvas id="event-strength-chart"></canvas>
                         </div>
                         <div id="event-summary"></div>
                     </div>
                 </div>
-                <button id="export-reporter-pdf-btn" class="btn btn-success" style="display: none;">Export to PDF</button>
                 <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;">Generate PDF Report</button>
             </div>
         </div>
@@ -213,6 +517,36 @@
         <script src="/js/email-preferences.js"></script>
     </div>
 
+    <script>
+        // Set up event listeners after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up load data button
+            const loadDataBtn = document.getElementById('load-data-btn');
+            if (loadDataBtn) {
+                loadDataBtn.addEventListener('click', function() {
+                    if (typeof loadReporterData === 'function') {
+                        loadReporterData();
+                    } else {
+                        console.error('loadReporterData function not found');
+                        alert('Error: Data loading function not available. Please refresh the page and try again.');
+                    }
+                });
+            }
+            
+            // Set up generate PDF button
+            const generatePdfBtn = document.getElementById('generate-pdf-btn');
+            if (generatePdfBtn) {
+                generatePdfBtn.addEventListener('click', function() {
+                    if (typeof window.generatePDFReport === 'function') {
+                        window.generatePDFReport();
+                    } else {
+                        console.error('generatePDFReport function not found');
+                        alert('Error: PDF generation function not available. Please refresh the page and try again.');
+                    }
+                });
+            }
+        });
+    </script>
 
 
 </body></html>

@@ -526,9 +526,9 @@ function createIdentitySwitchesPieChart(data) {
 
 function createDailyEventsSummary(data) {
     try {
-        const canvas = document.getElementById('daily-events-chart');
+        const canvas = document.getElementById('event-strength-chart');
         if (!canvas) {
-            console.error('Canvas element not found: daily-events-chart');
+            console.error('Canvas element not found: event-strength-chart');
             return;
         }
         
@@ -545,44 +545,44 @@ function createDailyEventsSummary(data) {
             window.dailyEventsChart.destroy();
         }
         
-        // Process data to count events by type
-        const eventCounts = {};
-        let totalEvents = 0;
+        // Process data for event characteristics (novelty, disruption, ordinariness)
+        const dates = data.map(item => new Date(item.submitTime));
+        const noveltyValues = data.map(item => parseInt(item.novelty || 0));
+        const disruptionValues = data.map(item => parseInt(item.disruption || 0));
+        const extraordinarinessValues = data.map(item => parseInt(item.ordinariness || 0));
         
-        for (const item of data) {
-            if (item.events && item.events.length > 0) {
-                const events = typeof item.events === 'string' ? JSON.parse(item.events) : item.events;
-                
-                for (const event of events) {
-                    if (event && event.type) {
-                        eventCounts[event.type] = (eventCounts[event.type] || 0) + 1;
-                        totalEvents++;
-                    }
-                }
-            }
-        }
-        
-        // Sort event types by count (descending)
-        const sortedEvents = Object.entries(eventCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10); // Limit to top 10 events
-        
-        const labels = sortedEvents.map(item => item[0]);
-        const counts = sortedEvents.map(item => item[1]);
-        
-        // Create the chart
+        // Create the event characteristics chart
         try {
             window.dailyEventsChart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Event Count',
-                        data: counts,
-                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                        borderColor: 'rgb(153, 102, 255)',
-                        borderWidth: 1
-                    }]
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Novelty',
+                            data: noveltyValues,
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'Disruption',
+                            data: disruptionValues,
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'Extraordinariness',
+                            data: extraordinarinessValues,
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 5
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -590,28 +590,34 @@ function createDailyEventsSummary(data) {
                     scales: {
                         y: {
                             beginAtZero: true,
+                            min: 0,
+                            max: 7,
                             title: {
                                 display: true,
-                                text: 'Number of Events'
+                                text: 'Event Strength (1-7)'
                             },
                             ticks: {
                                 stepSize: 1
                             }
                         },
                         x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: {
+                                    day: 'MMM d'
+                                }
+                            },
                             title: {
                                 display: true,
-                                text: 'Event Type'
+                                text: 'Date'
                             }
                         }
                     },
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Daily Events Summary'
-                        },
-                        legend: {
-                            display: false
+                            text: 'Daily Event Characteristics'
                         }
                     }
                 }
@@ -620,23 +626,31 @@ function createDailyEventsSummary(data) {
             // Display total events count
             const totalEventsElement = document.getElementById('total-events-count');
             if (totalEventsElement) {
-                totalEventsElement.textContent = totalEvents;
+                totalEventsElement.textContent = data.length;
             }
             
             // Create event descriptions summary
             createEventDescriptionsSummary(data);
             
         } catch (chartError) {
-            console.error('Error creating daily events chart:', chartError);
+            console.error('Error creating event strength chart:', chartError);
             
             // Create a fallback display
             const container = canvas.parentElement;
             const fallbackDiv = document.createElement('div');
+            
+            // Calculate averages
+            const avgNovelty = calculateMean(noveltyValues);
+            const avgDisruption = calculateMean(disruptionValues);
+            const avgExtraordinariness = calculateMean(extraordinarinessValues);
+            
             fallbackDiv.innerHTML = `
                 <h4>Daily Events Summary:</h4>
-                <p>Total events recorded: ${totalEvents}</p>
+                <p>Total events recorded: ${data.length}</p>
                 <ul>
-                    ${sortedEvents.map(event => `<li>${event[0]}: ${event[1]} occurrences</li>`).join('')}
+                    <li>Average Novelty: ${avgNovelty.toFixed(2)} / 7</li>
+                    <li>Average Disruption: ${avgDisruption.toFixed(2)} / 7</li>
+                    <li>Average Extraordinariness: ${avgExtraordinariness.toFixed(2)} / 7</li>
                 </ul>
             `;
             container.appendChild(fallbackDiv);
@@ -914,19 +928,24 @@ function createEventDescriptionsSummary(data) {
     let summaryHTML = '<h4>Event Descriptions by Date</h4>';
     summaryHTML += '<div class="event-descriptions">';
     
-    for (const item of data) {
-        const date = new Date(item.submitTime).toLocaleDateString();
-        summaryHTML += `
-            <div class="event-entry">
-                <div class="event-date">${date}</div>
-                <div class="event-metrics">
-                    <span class="badge badge-primary">Novelty: ${item.novelty}</span>
-                    <span class="badge badge-info">Disruption: ${item.disruption}</span>
-                    <span class="badge badge-success">Extraordinariness: ${item.ordinariness}</span>
+    // Check if we have any data
+    if (data.length === 0) {
+        summaryHTML += '<p>No event data found for this user.</p>';
+    } else {
+        for (const item of data) {
+            const date = new Date(item.submitTime).toLocaleDateString();
+            summaryHTML += `
+                <div class="event-entry">
+                    <div class="event-date">${date}</div>
+                    <div class="event-metrics">
+                        <span class="badge badge-primary">Novelty: ${item.novelty || 'N/A'}</span>
+                        <span class="badge badge-info">Disruption: ${item.disruption || 'N/A'}</span>
+                        <span class="badge badge-success">Extraordinariness: ${item.ordinariness || 'N/A'}</span>
+                    </div>
+                    <div class="event-text">${item.eventDescription || 'No description provided'}</div>
                 </div>
-                <div class="event-text">${item.eventDescription || 'No description provided'}</div>
-            </div>
-        `;
+            `;
+        }
     }
     
     summaryHTML += '</div>';

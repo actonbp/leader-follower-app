@@ -1,99 +1,25 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leader-Follower Identity Tracker (LFIT)</title>
-    
-    <!-- Social Media and SEO Meta Tags -->
-    <meta name="description" content="Track and visualize your leader and follower identities over time with the Leader-Follower Identity Tracker (LFIT)">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://lfit.me/">
-    <meta property="og:title" content="Leader-Follower Identity Tracker (LFIT)">
-    <meta property="og:description" content="A companion tool to help track the ebb and flow of leader and follower identities over time.">
-    <meta property="og:image" content="https://raw.githubusercontent.com/Bryan-Acton/leader-follower-app/main/screenshots/2025-03-10/01_main_welcome.png">
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://lfit.me/">
-    <meta property="twitter:title" content="Leader-Follower Identity Tracker (LFIT)">
-    <meta property="twitter:description" content="A companion tool to help track the ebb and flow of leader and follower identities over time.">
-    <meta property="twitter:image" content="https://raw.githubusercontent.com/Bryan-Acton/leader-follower-app/main/screenshots/2025-03-10/01_main_welcome.png">
-    
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/flatly/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/styles.css">
-    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-    
-    <!-- jQuery and Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    
-    <!-- Chart.js and plugins - specific versions for compatibility -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    
-    <!-- Global shims for module compatibility -->
-    <script>
-        // Create global shims for Node.js module system
-        window.require = function(module) {
-            console.warn('Browser require() called for: ' + module);
-            return {}; // Return empty object to prevent errors
-        };
-        
-        window.exports = {};
-        window.module = { exports: window.exports };
-    </script>
-    
-    <!-- PDF generation libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    
-    <!-- Loading indicator -->
-    <style>
-        #loading-indicator {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-        }
-    </style>
-    
-    <!-- Main application script - load as module -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@3.0.0/build/Chart.BoxPlot.min.js"></script>
     <script type="module" src="/js/main.js"></script>
-    
-    <!-- Load reporter.js as regular script instead of a module for better compatibility -->
-    <script src="/js/reporter.js"></script>
-    
-    <!-- Set up the generate PDF function -->
-    <script>
-        window.generatePDFReport = function() {
-            console.log('Generating PDF report');
-            if (typeof generateReporterPDF === 'function') {
-                generateReporterPDF();
-            } else {
-                console.error('generateReporterPDF function not found');
-                alert('Error: PDF generation function not available. Please refresh the page and try again.');
-            }
-        };
-    </script>
 </head>
 
 <body>
-    <div id="loading-indicator">
-        <div class="spinner-border text-primary" role="status">
-            <span class="sr-only">Loading...</span>
-        </div>
-        <p class="mt-2">Loading data and creating charts...</p>
-    </div>
-    
     <div class="container">
         <div id="main-welcome-page" class="page text-center mt-5">
             <h1 class="mb-4">Welcome to the Leader-Follower Identity Tracker (LFIT)</h1>
@@ -140,9 +66,9 @@
                 <p>Please enter your unique 6-digit ID to begin. This ID allows us to connect your reflections across days for your results report.</p>
                 <p>Here's how to create your unique ID (e.g., SM25EN):</p>
                 <ul>
-                    <li>First two characters of your maiden name (e.g., Smith --&gt; SM)</li>
-                    <li>Two digits of your birthdate (e.g., 25th May --&gt; 25)</li>
-                    <li>Final two characters of the place you were born (e.g., Copenhagen --&gt; EN)</li>
+                    <li>First two characters of your maiden name (e.g., Smith --> SM)</li>
+                    <li>Two digits of your birthdate (e.g., 25th May --> 25)</li>
+                    <li>Final two characters of the place you were born (e.g., Copenhagen --> EN)</li>
                 </ul>
                 <input type="text" id="user-id" class="form-control mb-3" placeholder="Enter your 6-digit ID">
                 <button id="start-btn" class="btn btn-success" onclick="startReflectorProcess()">Start</button>
@@ -210,7 +136,7 @@
                     <div class="scale top-left">Very much so</div>
                     <div class="point" id="point"></div>
                 </div>
-                <button id="grid-submit-btn" class="btn btn-success mt-3" onclick="submitGridAndContinue()" disabled="">Next</button>
+                <button id="grid-submit-btn" class="btn btn-success mt-3" onclick="submitGridAndContinue()" disabled>Next</button>
                 
                 <script>
                     // Set up grid click handler
@@ -469,7 +395,7 @@
                         <p>This part shows how much your leader and follower identities varied from day to day, and how much you engaged in leader-follower identity switching.</p>
                         <h4>How much did your leader and follower identities vary across days?</h4>
                         <table id="identity-variability-table">
-                            <tbody><tr>
+                            <tr>
                                 <th>Leader identity variability</th>
                                 <th>Follower identity variability</th>
                             </tr>
@@ -477,13 +403,13 @@
                                 <td id="leader-variability"></td>
                                 <td id="follower-variability"></td>
                             </tr>
-                        </tbody></table>
+                        </table>
                         <div id="variability-interpretation">
                             <p>Interpretation:</p>
                             <ul>
                                 <li>0-10: Low variability</li>
                                 <li>10-20: Moderate variability</li>
-                                <li>&gt;20: High variability</li>
+                                <li>>20: High variability</li>
                             </ul>
                             <p>High variability means you felt very much like a leader on some days and not at all on others. Low variability means your feelings of being a leader or follower were more consistent.</p>
                         </div>
@@ -499,7 +425,19 @@
                         <div id="event-summary"></div>
                     </div>
                 </div>
-                <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;">Generate PDF Report</button>
+                <button id="generate-pdf-btn" class="btn btn-primary" style="display: none;" onclick="generatePDFReport()">Generate PDF Report</button>
+                
+                <script>
+                    function generatePDFReport() {
+                        console.log('Generating PDF report');
+                        if (typeof generateReporterPDF === 'function') {
+                            generateReporterPDF();
+                        } else {
+                            console.error('generateReporterPDF function not found');
+                            alert('Error: PDF generation function not available. Please refresh the page and try again.');
+                        }
+                    }
+                </script>
             </div>
         </div>
 
@@ -508,7 +446,7 @@
                 <img src="/images/book_screenshot.jpg" alt="Book Cover" class="book-image">
                 <div class="citation-text">
                     <p id="citation">
-                        Nieberle, K. W., Acton, B. P., Fu, Y. A., Lord, R. G., &amp; Braun, S. (2024). Lead Today, Follow Tomorrow? How to Manage the Ebb and Flow of Leader and Follower Identities. In S. Braun, T. Hansbrough, G. A. Ruark, R. G. Lord, R. J. Hall &amp; O. Epitropaki (Eds.), Navigating Leadership: Evidence-Based Strategies for Leadership Development (pp. 9-35). Routledge. <a href="https://doi.org/10.4324/9781003377450" target="_blank">https://doi.org/10.4324/9781003377450</a>
+                        Nieberle, K. W., Acton, B. P., Fu, Y. A., Lord, R. G., & Braun, S. (2024). Lead Today, Follow Tomorrow? How to Manage the Ebb and Flow of Leader and Follower Identities. In S. Braun, T. Hansbrough, G. A. Ruark, R. G. Lord, R. J. Hall & O. Epitropaki (Eds.), Navigating Leadership: Evidence-Based Strategies for Leadership Development (pp. 9-35). Routledge. <a href="https://doi.org/10.4324/9781003377450" target="_blank">https://doi.org/10.4324/9781003377450</a>
                     </p>
                 </div>
             </div>
@@ -517,36 +455,6 @@
         <script src="/js/email-preferences.js"></script>
     </div>
 
-    <script>
-        // Set up event listeners after DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set up load data button
-            const loadDataBtn = document.getElementById('load-data-btn');
-            if (loadDataBtn) {
-                loadDataBtn.addEventListener('click', function() {
-                    if (typeof loadReporterData === 'function') {
-                        loadReporterData();
-                    } else {
-                        console.error('loadReporterData function not found');
-                        alert('Error: Data loading function not available. Please refresh the page and try again.');
-                    }
-                });
-            }
-            
-            // Set up generate PDF button
-            const generatePdfBtn = document.getElementById('generate-pdf-btn');
-            if (generatePdfBtn) {
-                generatePdfBtn.addEventListener('click', function() {
-                    if (typeof window.generatePDFReport === 'function') {
-                        window.generatePDFReport();
-                    } else {
-                        console.error('generatePDFReport function not found');
-                        alert('Error: PDF generation function not available. Please refresh the page and try again.');
-                    }
-                });
-            }
-        });
-    </script>
+</body>
 
-
-</body></html>
+</html>

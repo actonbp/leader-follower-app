@@ -1,0 +1,44 @@
+[
+  {
+    "leaderScore": "80.62",
+    "followerScore": "56.15",
+    "novelty": "3",
+    "disruption": "5",
+    "ordinariness": "3",
+    "id": "dac640e0-c1ae-4c52-a9db-386e5635312b",
+    "userId": "127",
+    "startTime": "2025-03-10T15:55:27.864Z",
+    "submitTime": "2025-03-10 11:55:43",
+    "eventDescription": "test",
+    "createdAt": "2025-03-10T15:55:43.963Z",
+    "updatedAt": "2025-03-10T15:55:43.963Z"
+  },
+  {
+    "leaderScore": "65.64",
+    "followerScore": "67.90",
+    "novelty": "3",
+    "disruption": "5",
+    "ordinariness": "3",
+    "id": "9ec575fb-222e-4ab8-b107-ba2266aac871",
+    "userId": "127",
+    "startTime": "2025-03-10T17:41:52.274Z",
+    "submitTime": "2025-03-10 13:42:09",
+    "eventDescription": "test",
+    "createdAt": "2025-03-10T17:42:09.572Z",
+    "updatedAt": "2025-03-10T17:42:09.572Z"
+  },
+  {
+    "leaderScore": "65.64",
+    "followerScore": "67.90",
+    "novelty": "3",
+    "disruption": "5",
+    "ordinariness": "3",
+    "id": "d7f56e53-b781-42c8-bf0f-2e0dc42029d4",
+    "userId": "127",
+    "startTime": "2025-03-10T17:41:52.274Z",
+    "submitTime": "2025-03-10 13:42:09",
+    "eventDescription": "test",
+    "createdAt": "2025-03-10T17:42:09.576Z",
+    "updatedAt": "2025-03-10T17:42:09.576Z"
+  }
+]

@@ -26,7 +26,9 @@
         "migrate-to-neon": "node migrate-to-neon.js",
         "vercel-deploy:neon": "cp vercel-neon.json vercel.json && vercel",
         "vercel-prod:neon": "cp vercel-neon.json vercel.json && vercel --prod",
-        "neon-branch": "./scripts/create-neon-branch.sh"
+        "neon-branch": "./scripts/create-neon-branch.sh",
+        "mcp:browserbase": "cd mcp-servers/mcp-server-browserbase/browserbase && BROWSERBASE_API_KEY=bb_live_X4aDGr_Il5_vWX50tFRPXbinPhc BROWSERBASE_PROJECT_ID=d868ded2-fe19-44b7-a02a-8296c919b15d node dist/index.js",
+        "mcp:stagehand": "cd mcp-servers/mcp-server-browserbase/stagehand && BROWSERBASE_API_KEY=bb_live_X4aDGr_Il5_vWX50tFRPXbinPhc BROWSERBASE_PROJECT_ID=d868ded2-fe19-44b7-a02a-8296c919b15d node dist/index.js"
     },
     "dependencies": {
         "body-parser": "^1.19.0",
