@@ -1,14 +1,5 @@
-// Import reporter functions directly
-import { 
-    createIdentityTrajectoryChart,
-    createGeneralIdentitySummary,
-    createIdentitySwitchesChart,
-    createIdentitySwitchesPieChart,
-    createDailyEventsSummary,
-    createDayToDayDynamics,
-    addChartDescriptions,
-    generateReporterPDF
-} from './reporter.js';
+// Reporter functions are now loaded as global functions via a script tag
+// No imports needed here - they will be available as global functions
 
 // Define the showPage function in the global scope
 function showPage(pageId) {
@@ -403,53 +394,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 await loadChartJsDynamically();
             }
             
-            // Create charts with try/catch for each
+            // Create charts with try/catch for each - using global functions
             try {
-                createIdentityTrajectoryChart(data);
-                console.log('Identity trajectory chart created successfully');
+                if (typeof createIdentityTrajectoryChart === 'function') {
+                    createIdentityTrajectoryChart(data);
+                    console.log('Identity trajectory chart created successfully');
+                } else {
+                    console.error('createIdentityTrajectoryChart function not found');
+                }
             } catch (error) {
                 console.error('Error creating identity trajectory chart:', error);
             }
             
             try {
-                createGeneralIdentitySummary(data);
-                console.log('General identity summary created successfully');
+                if (typeof createGeneralIdentitySummary === 'function') {
+                    createGeneralIdentitySummary(data);
+                    console.log('General identity summary created successfully');
+                } else {
+                    console.error('createGeneralIdentitySummary function not found');
+                }
             } catch (error) {
                 console.error('Error creating general identity summary:', error);
             }
             
             try {
-                createIdentitySwitchesChart(data);
-                console.log('Identity switches chart created successfully');
+                if (typeof createIdentitySwitchesChart === 'function') {
+                    createIdentitySwitchesChart(data);
+                    console.log('Identity switches chart created successfully');
+                } else {
+                    console.error('createIdentitySwitchesChart function not found');
+                }
             } catch (error) {
                 console.error('Error creating identity switches chart:', error);
             }
             
             try {
-                createIdentitySwitchesPieChart(data);
-                console.log('Identity switches pie chart created successfully');
+                if (typeof createIdentitySwitchesPieChart === 'function') {
+                    createIdentitySwitchesPieChart(data);
+                    console.log('Identity switches pie chart created successfully');
+                } else {
+                    console.error('createIdentitySwitchesPieChart function not found');
+                }
             } catch (error) {
                 console.error('Error creating identity switches pie chart:', error);
             }
             
             try {
-                createDailyEventsSummary(data);
-                console.log('Daily events summary created successfully');
+                if (typeof createDailyEventsSummary === 'function') {
+                    createDailyEventsSummary(data);
+                    console.log('Daily events summary created successfully');
+                } else {
+                    console.error('createDailyEventsSummary function not found');
+                }
             } catch (error) {
                 console.error('Error creating daily events summary:', error);
             }
             
             try {
-                createDayToDayDynamics(data);
-                console.log('Day-to-day dynamics created successfully');
+                if (typeof createDayToDayDynamics === 'function') {
+                    createDayToDayDynamics(data);
+                    console.log('Day-to-day dynamics created successfully');
+                } else {
+                    console.error('createDayToDayDynamics function not found');
+                }
             } catch (error) {
                 console.error('Error creating day-to-day dynamics:', error);
             }
             
             // Add chart descriptions
             try {
-                addChartDescriptions();
-                console.log('Chart descriptions added successfully');
+                if (typeof addChartDescriptions === 'function') {
+                    addChartDescriptions();
+                    console.log('Chart descriptions added successfully');
+                } else {
+                    console.error('addChartDescriptions function not found');
+                }
             } catch (error) {
                 console.error('Error adding chart descriptions:', error);
             }

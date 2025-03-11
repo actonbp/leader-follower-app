@@ -54,18 +54,15 @@
     <!-- Main application script - load as module -->
     <script type="module" src="/js/main.js"></script>
     
-    <!-- Load reporter.js as a module to make functions globally available -->
-    <script type="module">
-        import * as reporter from '/js/reporter.js';
-        
-        // Make reporter functions globally available
-        window.reporter = reporter;
-        
-        // Set up the generate PDF function
+    <!-- Load reporter.js as regular script instead of a module for better compatibility -->
+    <script src="/js/reporter.js"></script>
+    
+    <!-- Set up the generate PDF function -->
+    <script>
         window.generatePDFReport = function() {
             console.log('Generating PDF report');
-            if (window.reporter && typeof window.reporter.generateReporterPDF === 'function') {
-                window.reporter.generateReporterPDF();
+            if (typeof generateReporterPDF === 'function') {
+                generateReporterPDF();
             } else {
                 console.error('generateReporterPDF function not found');
                 alert('Error: PDF generation function not available. Please refresh the page and try again.');

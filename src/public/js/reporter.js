@@ -1,7 +1,7 @@
-// This file contains exported functions for use in main.js
+// This file contains functions used in main.js - exposed globally
 
-// Export the chart creation functions
-export function createIdentityTrajectoryChart(data) {
+// Create the chart creation functions
+function createIdentityTrajectoryChart(data) {
     try {
         const canvas = document.getElementById('identity-trajectory-chart');
         if (!canvas) {
@@ -86,7 +86,7 @@ export function createIdentityTrajectoryChart(data) {
     }
 }
 
-export function createGeneralIdentitySummary(data) {
+function createGeneralIdentitySummary(data) {
     try {
         const canvas = document.getElementById('general-identity-chart');
         if (!canvas) {
@@ -271,7 +271,7 @@ export function createGeneralIdentitySummary(data) {
     }
 }
 
-export function createIdentitySwitchesChart(data) {
+function createIdentitySwitchesChart(data) {
     try {
         const canvas = document.getElementById('identity-switches-chart');
         if (!canvas) {
@@ -412,7 +412,7 @@ export function createIdentitySwitchesChart(data) {
     }
 }
 
-export function createIdentitySwitchesPieChart(data) {
+function createIdentitySwitchesPieChart(data) {
     try {
         const canvas = document.getElementById('identity-switch-pie-chart');
         if (!canvas) {
@@ -524,7 +524,7 @@ export function createIdentitySwitchesPieChart(data) {
     }
 }
 
-export function createDailyEventsSummary(data) {
+function createDailyEventsSummary(data) {
     try {
         const canvas = document.getElementById('daily-events-chart');
         if (!canvas) {
@@ -653,7 +653,7 @@ export function createDailyEventsSummary(data) {
     }
 }
 
-export function createDayToDayDynamics(data) {
+function createDayToDayDynamics(data) {
     try {
         const canvas = document.getElementById('day-to-day-dynamics-chart');
         if (!canvas) {
@@ -774,7 +774,7 @@ export function createDayToDayDynamics(data) {
     }
 }
 
-export function generateReporterPDF() {
+function generateReporterPDF() {
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -848,7 +848,7 @@ export function generateReporterPDF() {
     }
 }
 
-export function addChartDescriptions() {
+function addChartDescriptions() {
     addChartDescription('identity-switch-pie-chart', 'This pie chart shows the proportion of days you identified more strongly as a leader, follower, or were in a liminal state (balanced between the two).');
     addChartDescription('identity-trajectory-chart', 'This chart shows how your leader and follower identities have changed over time. Higher values indicate a stronger identification with that role.');
     addChartDescription('general-identity-chart', 'This box plot displays the distribution of your leader and follower identity scores. The box represents the middle 50% of scores, with the line inside showing the median. The diamond marker shows the mean. The whiskers extend to the minimum and maximum scores.');
@@ -856,7 +856,7 @@ export function addChartDescriptions() {
     addChartDescription('event-strength-chart', 'This chart displays the average strength of daily events you experienced. Higher values indicate more impactful events that may have influenced your leader-follower identity.');
 }
 
-export function addChartDescription(chartId, description) {
+function addChartDescription(chartId, description) {
     const chartContainer = document.getElementById(chartId)?.closest('.chart-container');
     if (chartContainer) {
         let descriptionElement = chartContainer.querySelector('.chart-description');
