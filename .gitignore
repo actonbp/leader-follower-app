@@ -5,6 +5,11 @@ package-lock.json
 # Environment variables
 .env
 .env.local
+.env.*
+!.env.example
+**/start.sh
+**/start-*.sh
+**/run-*.sh
 
 # Logs
 logs
@@ -17,6 +22,8 @@ npm-debug.log*
 # Security
 *.pem
 *.key
+**/secrets/
+**/credentials/
 
 # Optional: Uncomment to exclude screenshots
 # screenshots/

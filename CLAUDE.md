@@ -13,8 +13,8 @@
 - **Setup Vercel for Neon**: `npm run vercel-setup:neon`
 
 ## MCP Server Credentials
-- **Browserbase API Key**: `bb_live_X4aDGr_Il5_vWX50tFRPXbinPhc`
-- **Browserbase Project ID**: `d868ded2-fe19-44b7-a02a-8296c919b15d`
+- **Browserbase API Key**: [stored in .env file]
+- **Browserbase Project ID**: [stored in .env file]
 
 ## MCP Server Setup & Usage
 
@@ -26,12 +26,13 @@
      "command": "node",
      "args": ["path/to/mcp-servers/mcp-server-browserbase/browserbase/dist/index.js"],
      "env": {
-       "BROWSERBASE_API_KEY": "bb_live_X4aDGr_Il5_vWX50tFRPXbinPhc", 
-       "BROWSERBASE_PROJECT_ID": "d868ded2-fe19-44b7-a02a-8296c919b15d"
+       "BROWSERBASE_API_KEY": "your_api_key_here", 
+       "BROWSERBASE_PROJECT_ID": "your_project_id_here"
      }
    }'
    ```
    - Replace `path/to` with your actual project path
+   - Replace credential placeholders with your actual credentials from .env file
 
 2. Verify configuration:
    ```bash

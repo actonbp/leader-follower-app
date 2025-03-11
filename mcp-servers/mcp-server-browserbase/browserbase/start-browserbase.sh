@@ -1,11 +1,21 @@
 #!/bin/bash
 
-# Set the environment variables
-export BROWSERBASE_API_KEY=bb_live_X4aDGr_Il5_vWX50tFRPXbinPhc
-export BROWSERBASE_PROJECT_ID=d868ded2-fe19-44b7-a02a-8296c919b15d
-
 # Change to the script's directory
 cd "$(dirname "$0")"
+
+# Load environment variables from .env file if present
+if [ -f .env ]; then
+  echo "Loading environment variables from .env file..."
+  export $(grep -v '^#' .env | xargs)
+else
+  echo "Warning: .env file not found. Make sure to set BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID environment variables."
+fi
+
+# Check if environment variables are set
+if [ -z "$BROWSERBASE_API_KEY" ] || [ -z "$BROWSERBASE_PROJECT_ID" ]; then
+  echo "Error: BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID must be set in .env file or environment."
+  exit 1
+fi
 
 # Run the server with HTTP transport instead of stdio
 node -e "
