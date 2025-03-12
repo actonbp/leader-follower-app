@@ -790,102 +790,13 @@ function createDayToDayDynamics(data) {
 }
 
 function generateReporterPDF() {
-    try {
-        console.log('Starting PDF generation');
-        const userId = document.getElementById('reporter-user-id').value;
-        
-        // Show a loading indicator
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'block';
-            loadingIndicator.querySelector('p').textContent = 'Generating PDF report...';
-        }
-        
-        // Check that libraries are properly loaded
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-            console.log('jsPDF not properly loaded, attempting to reload it');
-            
-            // First verify if the script exists already, remove if present to avoid conflicts
-            const existingScript = document.querySelector('script[src*="jspdf.umd.min.js"]');
-            if (existingScript) {
-                existingScript.parentNode.removeChild(existingScript);
-            }
-            
-            // Create new script element
-            const jsPdfScript = document.createElement('script');
-            jsPdfScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-            jsPdfScript.onload = function() {
-                console.log('jsPDF reload successful');
-                
-                // Check for html2canvas
-                if (typeof html2canvas === 'undefined') {
-                    const html2canvasScript = document.createElement('script');
-                    html2canvasScript.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-                    html2canvasScript.onload = function() {
-                        console.log('html2canvas loaded successfully');
-                        // Both libraries are now loaded
-                        generatePDFWithLibrary(userId);
-                    };
-                    html2canvasScript.onerror = function(err) {
-                        console.error('Failed to load html2canvas:', err);
-                        // Still try to generate PDF without charts
-                        generateTextOnlyPDF(new window.jspdf.jsPDF(), userId, 55);
-                    };
-                    document.head.appendChild(html2canvasScript);
-                } else {
-                    // html2canvas is already available
-                    generatePDFWithLibrary(userId);
-                }
-            };
-            jsPdfScript.onerror = function(error) {
-                console.error('Failed to load jsPDF:', error);
-                alert('PDF generation failed: Unable to load required libraries. Please check your internet connection and try again.');
-                if (loadingIndicator) {
-                    loadingIndicator.style.display = 'none';
-                }
-            };
-            document.head.appendChild(jsPdfScript);
-            return;
-        }
-        
-        // Check for html2canvas
-        if (typeof html2canvas === 'undefined') {
-            console.log('html2canvas not loaded, trying to load it');
-            const html2canvasScript = document.createElement('script');
-            html2canvasScript.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-            html2canvasScript.onload = function() {
-                console.log('html2canvas loaded successfully');
-                generatePDFWithLibrary(userId);
-            };
-            html2canvasScript.onerror = function(error) {
-                console.error('Failed to load html2canvas:', error);
-                // Try generating text-only PDF
-                if (window.jspdf && window.jspdf.jsPDF) {
-                    console.log('Falling back to text-only PDF');
-                    generateTextOnlyPDF(new window.jspdf.jsPDF(), userId, 55);
-                } else {
-                    alert('PDF generation failed. Please try again later.');
-                    if (loadingIndicator) {
-                        loadingIndicator.style.display = 'none';
-                    }
-                }
-            };
-            document.head.appendChild(html2canvasScript);
-            return;
-        }
-        
-        // Both libraries are available, generate the PDF
-        generatePDFWithLibrary(userId);
-    } catch (error) {
-        console.error('Error starting PDF generation:', error);
-        alert('Error starting PDF generation. Please try again: ' + error.message);
-        
-        // Hide loading indicator on error
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-        }
-    }
+    console.log('Generating reporter PDF');
+    
+    // Get the user ID from the URL or use "anonymous"
+    const userId = getUserIdFromUrl() || 'anonymous';
+    
+    // Use our new enhanced printable report approach
+    generateEnhancedPrintableReport(userId);
 }
 
 function loadJsPDF(userId) {
@@ -1581,4 +1492,284 @@ function getChartDescription(chartId) {
         'event-strength-chart': 'This chart displays the average strength of daily events you experienced. Higher values indicate more impactful events that may have influenced your leader-follower identity.'
     };
     return descriptions[chartId] || '';
+}
+
+/**
+ * Generates an enhanced printable view for PDF export
+ * This approach uses the browser's built-in print functionality
+ * which is more reliable than jsPDF for complex charts
+ */
+function generateEnhancedPrintableReport(userId) {
+    console.log('Generating enhanced printable report');
+    
+    // Open a new window for the report
+    const reportWindow = window.open('', '_blank');
+    
+    // Get current date formatted
+    const currentDate = new Date().toLocaleDateString();
+    
+    // Get the charts HTML content
+    const trajectoryChart = document.getElementById('identity-trajectory-chart');
+    const pieChart = document.getElementById('identity-switches-pie-chart');
+    const dynamicsChart = document.getElementById('day-to-day-dynamics-chart');
+    
+    // Get metrics data
+    const metrics = getReportMetrics();
+    
+    // Write a professionally styled document
+    reportWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Leadership Identity Report</title>
+            <style>
+                /* Professional print styling */
+                @page {
+                    size: letter;
+                    margin: 1.5cm;
+                }
+                
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    color: #333;
+                    line-height: 1.5;
+                    margin: 0;
+                    padding: 0;
+                }
+                
+                .report-header {
+                    text-align: center;
+                    margin-bottom: 2cm;
+                    padding-top: 1cm;
+                }
+                
+                .logo {
+                    max-width: 150px;
+                    margin-bottom: 0.5cm;
+                }
+                
+                h1 {
+                    font-size: 24pt;
+                    color: #2c3e50;
+                    margin-bottom: 0.5cm;
+                }
+                
+                h2 {
+                    font-size: 18pt;
+                    color: #3498db;
+                    margin-top: 1cm;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 0.3cm;
+                }
+                
+                h3 {
+                    font-size: 14pt;
+                    color: #2c3e50;
+                }
+                
+                .chart-container {
+                    page-break-inside: avoid;
+                    margin: 1cm 0;
+                    text-align: center;
+                }
+                
+                .chart-container img {
+                    max-width: 100%;
+                    height: auto;
+                }
+                
+                .description {
+                    font-style: italic;
+                    color: #555;
+                    margin-bottom: 1cm;
+                }
+                
+                .metrics-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 1cm;
+                    margin: 1cm 0;
+                }
+                
+                .metric-card {
+                    border: 1px solid #eee;
+                    padding: 0.5cm;
+                    border-radius: 0.2cm;
+                    page-break-inside: avoid;
+                    background-color: #f9f9f9;
+                }
+                
+                .metric-card h3 {
+                    margin-top: 0;
+                    border-bottom: 1px solid #ddd;
+                    padding-bottom: 0.2cm;
+                }
+                
+                .summary-section {
+                    margin-top: 1cm;
+                    page-break-before: always;
+                }
+                
+                .footer {
+                    text-align: center;
+                    font-size: 9pt;
+                    color: #7f8c8d;
+                    margin-top: 2cm;
+                    padding-bottom: 1cm;
+                    border-top: 1px solid #eee;
+                    padding-top: 0.5cm;
+                }
+                
+                .print-button {
+                    display: block;
+                    margin: 2cm auto;
+                    padding: 0.5cm 1cm;
+                    background: #3498db;
+                    color: white;
+                    border: none;
+                    border-radius: 0.2cm;
+                    font-size: 12pt;
+                    cursor: pointer;
+                }
+                
+                .citation {
+                    font-size: 8pt;
+                    margin-top: 0.5cm;
+                    color: #555;
+                }
+                
+                @media print {
+                    .print-button { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="report-header">
+                <img src="/images/logo.png" alt="LFIT Logo" class="logo" onerror="this.style.display='none'">
+                <h1>Leadership Identity Report</h1>
+                <p>Prepared on ${currentDate}</p>
+                <p>User ID: ${userId}</p>
+            </div>
+            
+            <h2>Identity Trajectory Overview</h2>
+            <p class="description">This chart shows your leader and follower identity strength over time, highlighting your identity trajectory patterns.</p>
+            <div class="chart-container">
+                ${trajectoryChart ? 
+                  `<img src="${convertCanvasToImage(trajectoryChart)}" alt="Identity Trajectory Chart">` : 
+                  '<p>Identity trajectory data not available</p>'}
+            </div>
+            
+            <h2>Identity Distribution</h2>
+            <p class="description">This pie chart shows the distribution of your different identity types throughout the recorded period.</p>
+            <div class="chart-container">
+                ${pieChart ? 
+                  `<img src="${convertCanvasToImage(pieChart)}" alt="Identity Distribution Chart">` : 
+                  '<p>Identity distribution data not available</p>'}
+            </div>
+            
+            <h2>Day-to-Day Dynamics</h2>
+            <p class="description">This chart visualizes how your identities change from day to day, showing patterns in your identity fluctuations.</p>
+            <div class="chart-container">
+                ${dynamicsChart ? 
+                  `<img src="${convertCanvasToImage(dynamicsChart)}" alt="Day-to-Day Dynamics Chart">` : 
+                  '<p>Day-to-day dynamics data not available</p>'}
+            </div>
+            
+            <div class="summary-section">
+                <h2>Key Metrics Summary</h2>
+                <div class="metrics-grid">
+                    ${renderMetricsCards(metrics)}
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>© ${new Date().getFullYear()} Leadership Identity Framework | Generated via LFIT.me</p>
+                <p class="citation">Nieberle, K. W., Acton, B. P., Fu, Y. A., Lord, R. G., & Braun, S. (2024). Lead Today, Follow Tomorrow? How to Manage the Ebb and Flow of Leader and Follower Identities.</p>
+            </div>
+            
+            <button class="print-button" onclick="window.print()">Save as PDF / Print Report</button>
+            
+            <script>
+                // Auto-open print dialog after content is fully loaded
+                window.onload = function() {
+                    // Give a slight delay to ensure everything is rendered
+                    setTimeout(function() {
+                        // Uncomment this line if you want the print dialog to open automatically
+                        // window.print();
+                    }, 1000);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+
+    // Helper function to convert canvas to image data URL
+    function convertCanvasToImage(canvas) {
+        // If canvas is null or not a valid canvas element
+        if (!canvas || !canvas.toDataURL) {
+            console.error('Invalid canvas element:', canvas);
+            return '';
+        }
+        
+        try {
+            return canvas.toDataURL('image/png');
+        } catch (e) {
+            console.error('Error converting canvas to image:', e);
+            return '';
+        }
+    }
+
+    // Helper function to render metric cards
+    function renderMetricsCards(metrics) {
+        return Object.entries(metrics).map(([key, value]) => `
+            <div class="metric-card">
+                <h3>${formatMetricName(key)}</h3>
+                <p>${value}</p>
+            </div>
+        `).join('');
+    }
+
+    // Helper function to format metric names
+    function formatMetricName(key) {
+        return key.split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+}
+
+/**
+ * Gets metrics data for the report
+ */
+function getReportMetrics() {
+    try {
+        // Get summary metrics from the charts and data
+        const leaderAvg = calculateMeanForElement('leader-avg') || 'N/A';
+        const followerAvg = calculateMeanForElement('follower-avg') || 'N/A';
+        
+        // Calculate identity distribution
+        const distribution = calculateIdentityDistribution();
+        
+        return {
+            leader_identity_average: `${leaderAvg} / 5`,
+            follower_identity_average: `${followerAvg} / 5`,
+            most_common_identity: distribution.mostCommon,
+            identity_stability: distribution.stability,
+            data_collection_period: `${distribution.days || 'N/A'} days`,
+            identity_switching_frequency: distribution.switchFrequency || 'N/A'
+        };
+    } catch (e) {
+        console.error('Error getting report metrics:', e);
+        return {
+            error: 'Could not calculate metrics due to missing data'
+        };
+    }
+}
+
+/**
+ * Gets user ID from URL
+ * This extracts the user ID from the URL query parameters
+ */
+function getUserIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('userId') || document.getElementById('reporter-user-id')?.value || null;
 }

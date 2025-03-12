@@ -333,3 +333,35 @@ This project is licensed under the terms of the license included in the [LICENSE
 3. Commit your changes: `git commit -am 'Add some feature'`
 4. Push to the branch: `git push origin feature-name`
 5. Submit a pull request
+
+## PDF Report Enhancement To-Do List
+
+The application now uses a browser-based printable view approach for PDF reports. Future enhancements should focus on:
+
+### Visual and Design Improvements
+- [ ] Add proper LFIT branding and logo to the PDF report
+- [ ] Improve typography with professional font pairings
+- [ ] Create a consistent color scheme matching the application
+- [ ] Add visual data separators and section dividers
+- [ ] Implement proper page breaks to ensure charts don't split across pages
+
+### Content Enhancements
+- [ ] Add detailed data interpretations for each chart
+- [ ] Include personalized insights based on identity patterns
+- [ ] Add development recommendations section based on identity distribution
+- [ ] Incorporate reference to relevant research findings
+- [ ] Add explanatory text about how to interpret the metrics
+
+### Technical Improvements
+- [ ] Optimize chart rendering for print output
+- [ ] Add support for different paper sizes (A4, Letter)
+- [ ] Ensure cross-browser compatibility
+- [ ] Add option to include/exclude specific sections
+- [ ] Implement error handling for missing data
+
+### User Interface
+- [ ] Redesign the Reporter page UI for a more professional look
+- [ ] Add email option to send the report directly to the user
+- [ ] Provide additional format options (PDF, PNG, HTML)
+- [ ] Add a preview mode before generating the final PDF
+- [ ] Implement a loading indicator during report generation
