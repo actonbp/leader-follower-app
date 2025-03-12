@@ -132,6 +132,7 @@ button:disabled {
     width: 100%;
     height: 100%;
     background-color: #e0e0e0;
+    aspect-ratio: 1 / 1; /* Ensures the grid is perfectly square */
 }
 
 @media (max-width: 480px) {

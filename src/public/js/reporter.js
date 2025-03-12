@@ -55,6 +55,7 @@ function createIdentityTrajectoryChart(data) {
                     x: {
                         type: 'time',
                         time: {
+                            unit: 'day',
                             displayFormats: {
                                 day: 'MMM d'
                             }
@@ -790,6 +791,126 @@ function createDayToDayDynamics(data) {
 
 function generateReporterPDF() {
     try {
+        console.log('Starting PDF generation');
+        const userId = document.getElementById('reporter-user-id').value;
+        
+        // Show a loading indicator
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+            loadingIndicator.querySelector('p').textContent = 'Generating PDF report...';
+        }
+        
+        // Check that libraries are properly loaded
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+            console.log('jsPDF not properly loaded, attempting to reload it');
+            
+            // First verify if the script exists already, remove if present to avoid conflicts
+            const existingScript = document.querySelector('script[src*="jspdf.umd.min.js"]');
+            if (existingScript) {
+                existingScript.parentNode.removeChild(existingScript);
+            }
+            
+            // Create new script element
+            const jsPdfScript = document.createElement('script');
+            jsPdfScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            jsPdfScript.onload = function() {
+                console.log('jsPDF reload successful');
+                
+                // Check for html2canvas
+                if (typeof html2canvas === 'undefined') {
+                    const html2canvasScript = document.createElement('script');
+                    html2canvasScript.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+                    html2canvasScript.onload = function() {
+                        console.log('html2canvas loaded successfully');
+                        // Both libraries are now loaded
+                        generatePDFWithLibrary(userId);
+                    };
+                    html2canvasScript.onerror = function(err) {
+                        console.error('Failed to load html2canvas:', err);
+                        // Still try to generate PDF without charts
+                        generateTextOnlyPDF(new window.jspdf.jsPDF(), userId, 55);
+                    };
+                    document.head.appendChild(html2canvasScript);
+                } else {
+                    // html2canvas is already available
+                    generatePDFWithLibrary(userId);
+                }
+            };
+            jsPdfScript.onerror = function(error) {
+                console.error('Failed to load jsPDF:', error);
+                alert('PDF generation failed: Unable to load required libraries. Please check your internet connection and try again.');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+            };
+            document.head.appendChild(jsPdfScript);
+            return;
+        }
+        
+        // Check for html2canvas
+        if (typeof html2canvas === 'undefined') {
+            console.log('html2canvas not loaded, trying to load it');
+            const html2canvasScript = document.createElement('script');
+            html2canvasScript.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+            html2canvasScript.onload = function() {
+                console.log('html2canvas loaded successfully');
+                generatePDFWithLibrary(userId);
+            };
+            html2canvasScript.onerror = function(error) {
+                console.error('Failed to load html2canvas:', error);
+                // Try generating text-only PDF
+                if (window.jspdf && window.jspdf.jsPDF) {
+                    console.log('Falling back to text-only PDF');
+                    generateTextOnlyPDF(new window.jspdf.jsPDF(), userId, 55);
+                } else {
+                    alert('PDF generation failed. Please try again later.');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
+            };
+            document.head.appendChild(html2canvasScript);
+            return;
+        }
+        
+        // Both libraries are available, generate the PDF
+        generatePDFWithLibrary(userId);
+    } catch (error) {
+        console.error('Error starting PDF generation:', error);
+        alert('Error starting PDF generation. Please try again: ' + error.message);
+        
+        // Hide loading indicator on error
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+    }
+}
+
+function loadJsPDF(userId) {
+    const jsPdfScript = document.createElement('script');
+    jsPdfScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    jsPdfScript.onload = function() {
+        console.log('jsPDF loaded successfully, continuing with PDF generation');
+        generatePDFWithLibrary(userId);
+    };
+    jsPdfScript.onerror = function(error) {
+        console.error('Failed to load jsPDF:', error);
+        alert('Failed to load PDF generation library. Please check your internet connection and try again.');
+    };
+    document.head.appendChild(jsPdfScript);
+}
+
+function generatePDFWithLibrary(userId) {
+    try {
+        console.log('Generating PDF with library');
+        
+        // Make sure jsPDF is available
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            throw new Error("jsPDF is not available");
+        }
+        
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
@@ -798,68 +919,440 @@ function generateReporterPDF() {
         doc.rect(0, 0, 210, 20, 'F');
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text('LFIT Reporter Summary', 105, 15, { align: 'center' });
+        doc.text('Leader-Follower Identity Tracker', 105, 15, { align: 'center' });
         
         // Add user ID and date
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        const userId = document.getElementById('reporter-user-id').value;
         doc.text(`User ID: ${userId}`, 20, 30);
         doc.text(`Report generated: ${new Date().toLocaleDateString()}`, 20, 40);
         
         let yPos = 55;
         
-        // Capture and add charts
-        const charts = ['identity-trajectory-chart', 'identity-switches-chart', 'identity-switch-pie-chart', 'general-identity-chart', 'event-strength-chart'];
+        // No longer ask for text-only report - we'll attempt to generate the visual report first
+        // and only fall back to text-only if needed
         
-        for (const chartId of charts) {
-            const canvas = document.getElementById(chartId);
-            if (canvas) {
-                const chartImg = canvas.toDataURL('image/png');
-                doc.text(getChartTitle(chartId), 20, yPos);
-                yPos += 10;
-                doc.addImage(chartImg, 'PNG', 20, yPos, 170, 85);
-                yPos += 95;
+        // Define sections and their information
+        const sections = [
+            {
+                title: 'Leader and Follower Identity Trajectory',
+                chartId: 'identity-trajectory-chart',
+            },
+            {
+                title: 'General Identity and Equilibrium',
+                chartId: 'general-identity-chart',
+            },
+            {
+                title: 'Distribution of Identity Types',
+                chartId: 'identity-switch-pie-chart',
+            },
+            {
+                title: 'Day-to-Day Identity Dynamics',
+                chartId: 'identity-switches-chart',
+            },
+            {
+                title: 'Daily Events',
+                chartId: 'event-strength-chart',
+            }
+        ];
+        
+        // Improved function to capture chart using html2canvas with better error handling
+        const captureChart = async (chartElement) => {
+            if (typeof html2canvas === 'undefined') {
+                console.error("html2canvas library not loaded");
+                return null; // Return null to handle gracefully later
+            }
+            
+            try {
+                // Force repaint to ensure chart is visible
+                chartElement.style.visibility = 'visible';
+                chartElement.style.opacity = '1';
                 
-                // Add description
-                const description = getChartDescription(chartId);
-                if (description) {
-                    const splitText = doc.splitTextToSize(description, 170);
-                    doc.text(splitText, 20, yPos);
-                    yPos += splitText.length * 7 + 10;
-                }
+                // Add a longer delay to ensure chart is fully rendered
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                // Add page break if needed
-                if (yPos > 250 && chartId !== charts[charts.length - 1]) {
-                    doc.addPage();
-                    yPos = 20;
+                // Try with more conservative settings first
+                const canvas = await html2canvas(chartElement, {
+                    scale: 2, // Higher quality
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    allowTaint: true, // Try to allow tainted canvases
+                    foreignObjectRendering: false, // Disable for better compatibility
+                    removeContainer: true, // Cleanup after capture
+                    imageTimeout: 15000, // Longer timeout for images
+                });
+                
+                return canvas.toDataURL('image/png');
+            } catch (err) {
+                console.error("Error capturing chart with html2canvas:", err);
+                
+                // Try a second approach with different settings
+                try {
+                    console.log("Trying alternative html2canvas configuration");
+                    const canvas = await html2canvas(chartElement, {
+                        scale: 1, // Lower quality but more reliable
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#ffffff',
+                        allowTaint: false, // Be more strict
+                        foreignObjectRendering: false,
+                    });
+                    return canvas.toDataURL('image/png');
+                } catch (secondError) {
+                    console.error("Second html2canvas attempt failed:", secondError);
+                    
+                    // Last resort: try native canvas toDataURL if it's a canvas element
+                    if (chartElement.tagName.toLowerCase() === 'canvas') {
+                        try {
+                            return chartElement.toDataURL('image/png');
+                        } catch (canvasError) {
+                            console.error("Native canvas toDataURL failed:", canvasError);
+                            return null; // Couldn't capture this chart
+                        }
+                    }
+                    
+                    return null; // Couldn't capture this chart
                 }
             }
+        };
+        
+        // Process charts one by one with promises
+        const processCharts = async () => {
+            try {
+                // Track if any charts were captured successfully
+                let capturedChartCount = 0;
+                let failedChartCount = 0;
+                
+                for (const section of sections) {
+                    const chartElement = document.getElementById(section.chartId);
+                    if (!chartElement) {
+                        console.warn(`Chart element ${section.chartId} not found in DOM`);
+                        continue;
+                    }
+                    
+                    // Add section title
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(section.title, 20, yPos);
+                    yPos += 10;
+                    
+                    // Try to capture the chart
+                    try {
+                        let chartImg = await captureChart(chartElement);
+                        
+                        if (chartImg) {
+                            capturedChartCount++;
+                            doc.addImage(chartImg, 'PNG', 20, yPos, 170, 85);
+                            yPos += 95;
+                        } else {
+                            failedChartCount++;
+                            throw new Error("Chart capture returned empty result");
+                        }
+                    } catch (imgError) {
+                        console.error(`Failed to capture image for ${section.chartId}:`, imgError);
+                        
+                        // Add text description instead
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(`[Chart image could not be captured]`, 20, yPos);
+                        yPos += 10;
+                    }
+                    
+                    // Add description
+                    doc.setFont('helvetica', 'normal');
+                    const description = getChartDescription(section.chartId);
+                    if (description) {
+                        const splitText = doc.splitTextToSize(description, 170);
+                        doc.text(splitText, 20, yPos);
+                        yPos += splitText.length * 7 + 10;
+                    }
+                    
+                    // Add page break if needed
+                    if (yPos > 250 && section !== sections[sections.length - 1]) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                }
+                
+                // Check if we failed to capture all charts
+                if (capturedChartCount === 0 && failedChartCount > 0) {
+                    console.warn("Failed to capture any charts. Switching to text-only report");
+                    // Only show alert if all charts failed to capture
+                    generateTextOnlyPDF(new jsPDF(), userId, 55);
+                    return;
+                }
+                
+                // Add identity variability data
+                doc.setFont('helvetica', 'bold');
+                doc.text('Day-to-Day Identity Variability:', 20, yPos);
+                yPos += 10;
+                
+                doc.setFont('helvetica', 'normal');
+                const leaderVariability = document.getElementById('leader-variability');
+                const followerVariability = document.getElementById('follower-variability');
+                
+                if (leaderVariability && followerVariability) {
+                    doc.text(`Leader identity variability: ${leaderVariability.textContent}`, 30, yPos);
+                    yPos += 7;
+                    doc.text(`Follower identity variability: ${followerVariability.textContent}`, 30, yPos);
+                    yPos += 15;
+                } else {
+                    doc.text('Variability data not available', 30, yPos);
+                    yPos += 15;
+                }
+                
+                // Add footer
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(10);
+                    doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+                    doc.text('Leader-Follower Identity Tracker (LFIT)', 105, 285, { align: 'center' });
+                }
+                
+                // Save the PDF
+                doc.save(`LFIT_Report_${userId}.pdf`);
+                console.log('PDF generation completed successfully');
+                
+                // Hide loading indicator after successful generation
+                const loadingIndicator = document.getElementById('loading-indicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                
+            } catch (processError) {
+                console.error('Error in chart processing:', processError);
+                
+                // Final fallback - switch to text-only mode
+                console.log('Switching to text-only report due to error:', processError.message);
+                generateTextOnlyPDF(new jsPDF(), userId, 55);
+            }
+        };
+        
+        // Start processing charts
+        processCharts().catch(error => {
+            console.error('Fatal error in chart processing:', error);
+            
+            // Hide loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            // Final fallback
+            alert(`Error generating PDF. Switching to text-only version.`);
+            generateTextOnlyPDF(new jsPDF(), userId, 55);
+        });
+        
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        
+        // Hide loading indicator
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
         }
         
-        // Add identity variability data
-        doc.text('Day-to-Day Identity Variability:', 20, yPos);
+        alert(`Error generating PDF report: ${error.message}. Please try again.`);
+    }
+}
+
+// Text-only PDF generation as a fallback
+function generateTextOnlyPDF(doc, userId, startY) {
+    try {
+        console.log('Generating text-only PDF report');
+        
+        // Check if we need to update the loading indicator text
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator && loadingIndicator.style.display === 'block') {
+            loadingIndicator.querySelector('p').textContent = 'Generating text-only PDF report...';
+        }
+        
+        // Make sure we have a valid jsPDF instance
+        let pdfDoc;
+        try {
+            // Use the provided document if possible
+            pdfDoc = doc instanceof Object && typeof doc.addPage === 'function' ? doc : null;
+        } catch (e) {
+            console.warn('Invalid jsPDF document provided:', e);
+            pdfDoc = null;
+        }
+        
+        // Create a new jsPDF instance if needed
+        if (!pdfDoc) {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                throw new Error("jsPDF library is not available");
+            }
+            pdfDoc = new window.jspdf.jsPDF();
+        }
+        
+        // Add header
+        pdfDoc.setFillColor(220, 220, 220);
+        pdfDoc.rect(0, 0, 210, 20, 'F');
+        pdfDoc.setFontSize(16);
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.text('Leader-Follower Identity Tracker - Text Report', 105, 15, { align: 'center' });
+        
+        // Add user ID and date
+        pdfDoc.setFontSize(12);
+        pdfDoc.setFont('helvetica', 'normal');
+        pdfDoc.text(`User ID: ${userId}`, 20, 30);
+        pdfDoc.text(`Report generated: ${new Date().toLocaleDateString()}`, 20, 40);
+        
+        let yPos = startY || 55;
+        
+        // Get data from the DOM
+        const leaderVariability = document.getElementById('leader-variability');
+        const followerVariability = document.getElementById('follower-variability');
+        
+        // Section 1: Identity Trajectory
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.text('Leader and Follower Identity Trajectory', 20, yPos);
         yPos += 10;
-        doc.text(`Leader identity variability: ${document.getElementById('leader-variability').textContent}`, 30, yPos);
-        yPos += 7;
-        doc.text(`Follower identity variability: ${document.getElementById('follower-variability').textContent}`, 30, yPos);
-        yPos += 15;
+        
+        pdfDoc.setFont('helvetica', 'normal');
+        const description1 = getChartDescription('identity-trajectory-chart');
+        if (description1) {
+            const splitText = pdfDoc.splitTextToSize(description1, 170);
+            pdfDoc.text(splitText, 20, yPos);
+            yPos += splitText.length * 7 + 10;
+        }
+        
+        // Extract identity information text
+        try {
+            // Use the reported leader and follower variability to provide some data
+            pdfDoc.text('Your Identity Data Summary:', 20, yPos);
+            yPos += 10;
+            
+            if (leaderVariability && followerVariability) {
+                pdfDoc.text(`• Leader identity variability: ${leaderVariability.textContent}`, 30, yPos);
+                yPos += 7;
+                pdfDoc.text(`• Follower identity variability: ${followerVariability.textContent}`, 30, yPos);
+                yPos += 10;
+                
+                // Add some general interpretation
+                const variabilityText = "Your identity data shows how your sense of being a leader and follower changes over time. The variability scores indicate how much these identities fluctuate day to day.";
+                const splitVarText = pdfDoc.splitTextToSize(variabilityText, 170);
+                pdfDoc.text(splitVarText, 30, yPos);
+                yPos += splitVarText.length * 7 + 10;
+            } else {
+                pdfDoc.text('Detailed identity data not available in text-only report', 30, yPos);
+                yPos += 10;
+            }
+        } catch (dataError) {
+            console.error('Error extracting identity data:', dataError);
+            pdfDoc.text('Error extracting identity data details', 30, yPos);
+            yPos += 10;
+        }
+        
+        // Add page break if needed
+        if (yPos > 250) {
+            pdfDoc.addPage();
+            yPos = 20;
+        }
+        
+        // Section 2: Variability and Interpretation
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.text('Day-to-Day Identity Variability', 20, yPos);
+        yPos += 10;
+        
+        pdfDoc.setFont('helvetica', 'normal');
+        const variabilityInfo = `
+        Identity variability measures how much your leader and follower identities change from day to day. Higher values indicate more significant changes in how you see yourself.
+        
+        Interpretation:
+        • 0-10: Low variability - Your identity is relatively stable
+        • 10-20: Moderate variability - You experience regular changes in identity
+        • >20: High variability - Your identity fluctuates significantly
+        
+        High variability means you felt very much like a leader on some days and not at all on others. Low variability means your feelings of being a leader or follower were more consistent.
+        `;
+        
+        const splitVarInfo = pdfDoc.splitTextToSize(variabilityInfo.trim(), 170);
+        pdfDoc.text(splitVarInfo, 20, yPos);
+        yPos += splitVarInfo.length * 7 + 10;
+        
+        // Add page break if needed
+        if (yPos > 250) {
+            pdfDoc.addPage();
+            yPos = 20;
+        }
+        
+        // Section 3: Events Summary
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.text('Daily Events Summary', 20, yPos);
+        yPos += 10;
+        
+        pdfDoc.setFont('helvetica', 'normal');
+        const eventsInfo = `
+        Your daily experiences influence how you see yourself as a leader or follower. The events you recorded were rated on three dimensions:
+        
+        • Novelty: How new or familiar the event was
+        • Disruption: How much the event disrupted your routine
+        • Extraordinariness: How ordinary or extraordinary the event was
+        
+        More novel, disruptive, and extraordinary events tend to have a stronger impact on your leader-follower identity.
+        `;
+        
+        const splitEventsInfo = pdfDoc.splitTextToSize(eventsInfo.trim(), 170);
+        pdfDoc.text(splitEventsInfo, 20, yPos);
+        yPos += splitEventsInfo.length * 7 + 10;
         
         // Add footer
-        const pageCount = doc.internal.getNumberOfPages();
+        const pageCount = pdfDoc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(10);
-            doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
-            doc.text('Leader-Follower Identity Tracker (LFIT)', 105, 285, { align: 'center' });
+            pdfDoc.setPage(i);
+            pdfDoc.setFontSize(10);
+            pdfDoc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+            pdfDoc.text('Leader-Follower Identity Tracker (LFIT) - Text Report', 105, 285, { align: 'center' });
         }
         
         // Save the PDF
-        doc.save(`LFIT_Report_${userId}.pdf`);
+        pdfDoc.save(`LFIT_Report_${userId}.pdf`);
+        console.log('Text-only PDF generation completed successfully');
+        
+        // Hide loading indicator
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        
     } catch (error) {
-        console.error('Error generating PDF:', error);
-        alert('Error generating PDF report. Please try again.');
+        console.error('Error generating text-only PDF:', error);
+        alert(`Error generating PDF: ${error.message}. Please try again.`);
+        
+        // Hide loading indicator on error
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
     }
+}
+
+// Helper functions for text-only PDF
+function extractTrajectoryData() {
+    try {
+        // This is a simplified extraction - in a real implementation,
+        // you would get this data from your chart.js instances
+        return [
+            { date: 'Recent data', leader: 'See chart for values', follower: 'See chart for values' }
+        ];
+    } catch (err) {
+        console.error('Error extracting trajectory data:', err);
+        return [];
+    }
+}
+
+function calculateMeanForElement(elementId) {
+    const element = document.getElementById(elementId);
+    return element ? element.textContent : 'N/A';
+}
+
+function calculateIdentityDistribution() {
+    // In a real implementation, you would calculate this from your data
+    return {
+        leader: 'See chart for values',
+        follower: 'See chart for values',
+        balanced: 'See chart for values'
+    };
 }
 
 function addChartDescriptions() {
@@ -918,7 +1411,17 @@ function createEventDescriptionsSummary(data) {
     const eventSummaryElement = document.getElementById('event-summary');
     if (!eventSummaryElement) {
         console.error('Element not found: event-summary');
-        return;
+        // Create the event summary element if it doesn't exist
+        const eventsTab = document.getElementById('events-tab');
+        if (eventsTab) {
+            const newEventSummary = document.createElement('div');
+            newEventSummary.id = 'event-summary';
+            eventsTab.appendChild(newEventSummary);
+            console.log('Created event-summary element');
+        } else {
+            console.error('Cannot create event-summary, events-tab not found');
+            return;
+        }
     }
     
     // Sort data by date
@@ -949,7 +1452,12 @@ function createEventDescriptionsSummary(data) {
     }
     
     summaryHTML += '</div>';
-    eventSummaryElement.innerHTML = summaryHTML;
+    
+    // Get the event summary element again (might have been created)
+    const updatedEventSummaryElement = document.getElementById('event-summary');
+    if (updatedEventSummaryElement) {
+        updatedEventSummaryElement.innerHTML = summaryHTML;
+    }
     
     // Add some CSS
     const style = document.createElement('style');

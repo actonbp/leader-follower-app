@@ -50,8 +50,26 @@
     </script>
     
     <!-- PDF generation libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js" integrity="sha512-s/XK4vYVXTGeUSv4bRPOuxSDmDlTedEpMEcAQk0t/FMd9V6ft8iXdwSBxV0eD60c6w/tjotSlKu9J2AAW1ckTA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <!-- Preload the PDF libraries to ensure they're available -->
+    <script>
+        // Verify that libraries are loaded correctly
+        window.addEventListener('load', function() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                console.warn('jsPDF not loaded properly, will attempt to load again when needed');
+            } else {
+                console.log('jsPDF loaded successfully');
+            }
+            
+            if (typeof html2canvas === 'undefined') {
+                console.warn('html2canvas not loaded properly, will attempt to load again when needed');
+            } else {
+                console.log('html2canvas loaded successfully');
+            }
+        });
+    </script>
     
     <!-- Loading indicator -->
     <style>
@@ -451,51 +469,63 @@
                 </script>
                 
                 <div id="identity-tab" class="tabcontent">
+                    <h3>Leader-Follower Identity Tracker</h3>
+                    <p>This visualization tool helps you track and understand patterns in your leader and follower identities over time.</p>
+                    
+                    <h3>Leader and Follower Identity Trajectory</h3>
                     <div class="chart-container">
                         <canvas id="identity-trajectory-chart"></canvas>
                     </div>
+                    
+                    <h3>General Identity and Equilibrium</h3>
+                    <p>This section reports how much you felt like a leader and a follower in general during this period, and how much leader-follower identity liminality you experienced.</p>
+                    
+                    <h4>Average Identity Scores</h4>
                     <div class="chart-container">
-                        <canvas id="identity-switches-chart"></canvas>
+                        <canvas id="general-identity-chart"></canvas>
                     </div>
+                    
+                    <h4>Distribution of Identity Types</h4>
                     <div class="chart-container">
                         <canvas id="identity-switch-pie-chart"></canvas>
                     </div>
-                    <div id="general-identity">
-                        <h3>Your General Leader and Follower Identity</h3>
-                        <div class="chart-container">
-                            <canvas id="general-identity-chart"></canvas>
-                        </div>
-                    </div>
+                    
                     <div id="liminality-section" class="chart-container"></div>
-                    <div id="day-to-day-dynamics">
-                        <h3>Your Day-to-Day Identity Dynamics</h3>
-                        <p>This part shows how much your leader and follower identities varied from day to day, and how much you engaged in leader-follower identity switching.</p>
-                        <h4>How much did your leader and follower identities vary across days?</h4>
-                        <table id="identity-variability-table">
-                            <tr>
-                                <th>Leader identity variability</th>
-                                <th>Follower identity variability</th>
-                            </tr>
-                            <tr>
-                                <td id="leader-variability"></td>
-                                <td id="follower-variability"></td>
-                            </tr>
-                        </table>
-                        <div id="variability-interpretation">
-                            <p>Interpretation:</p>
-                            <ul>
-                                <li>0-10: Low variability</li>
-                                <li>10-20: Moderate variability</li>
-                                <li>>20: High variability</li>
-                            </ul>
-                            <p>High variability means you felt very much like a leader on some days and not at all on others. Low variability means your feelings of being a leader or follower were more consistent.</p>
-                        </div>
+                    
+                    <h3>Day-to-Day Identity Dynamics</h3>
+                    <p>This part shows how much your leader and follower identities varied from day to day, and how much you engaged in leader-follower identity switching.</p>
+                    
+                    <h4>Variability Indicators</h4>
+                    <table id="identity-variability-table">
+                        <tr>
+                            <th>Leader identity variability</th>
+                            <th>Follower identity variability</th>
+                        </tr>
+                        <tr>
+                            <td id="leader-variability"></td>
+                            <td id="follower-variability"></td>
+                        </tr>
+                    </table>
+                    <div id="variability-interpretation">
+                        <p>Interpretation:</p>
+                        <ul>
+                            <li>0-10: Low variability</li>
+                            <li>10-20: Moderate variability</li>
+                            <li>>20: High variability</li>
+                        </ul>
+                        <p>High variability means you felt very much like a leader on some days and not at all on others. Low variability means your feelings of being a leader or follower were more consistent.</p>
+                    </div>
+                    
+                    <h4>Leader-Follower Identity Switches</h4>
+                    <div class="chart-container">
+                        <canvas id="identity-switches-chart"></canvas>
                     </div>
                 </div>
                 
                 <div id="events-tab" class="tabcontent" style="display: none;">
                     <div id="daily-events">
                         <h3>Your Daily Events</h3>
+                        <p>This section gives you a summary of the type of events that you experienced on the respective days, and a quantification of how strong you experienced these events to be.</p>
                         <div class="chart-container">
                             <canvas id="event-strength-chart"></canvas>
                         </div>
