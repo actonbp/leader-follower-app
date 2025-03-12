@@ -1512,6 +1512,7 @@ function generateEnhancedPrintableReport(userId) {
     const trajectoryChart = document.getElementById('identity-trajectory-chart');
     const pieChart = document.getElementById('identity-switches-pie-chart');
     const dynamicsChart = document.getElementById('day-to-day-dynamics-chart');
+    const eventsChart = document.getElementById('event-strength-chart');
     
     // Get metrics data
     const metrics = getReportMetrics();
@@ -1526,7 +1527,7 @@ function generateEnhancedPrintableReport(userId) {
                 /* Professional print styling */
                 @page {
                     size: letter;
-                    margin: 1.5cm;
+                    margin: 2cm;
                 }
                 
                 body {
@@ -1535,12 +1536,15 @@ function generateEnhancedPrintableReport(userId) {
                     line-height: 1.5;
                     margin: 0;
                     padding: 0;
+                    max-width: 800px;
+                    margin: 0 auto;
                 }
                 
                 .report-header {
                     text-align: center;
-                    margin-bottom: 2cm;
-                    padding-top: 1cm;
+                    padding: 1cm 0 2cm 0;
+                    border-bottom: 1px solid #ddd;
+                    margin-bottom: 1.5cm;
                 }
                 
                 .logo {
@@ -1557,56 +1561,71 @@ function generateEnhancedPrintableReport(userId) {
                 h2 {
                     font-size: 18pt;
                     color: #3498db;
-                    margin-top: 1cm;
+                    margin-top: 1.5cm;
+                    margin-bottom: 0.5cm;
                     border-bottom: 1px solid #eee;
                     padding-bottom: 0.3cm;
+                    page-break-after: avoid;
                 }
                 
                 h3 {
                     font-size: 14pt;
                     color: #2c3e50;
+                    margin-top: 1cm;
+                    margin-bottom: 0.3cm;
                 }
                 
                 .chart-container {
                     page-break-inside: avoid;
-                    margin: 1cm 0;
+                    margin: 1cm 0 1.5cm 0;
                     text-align: center;
                 }
                 
                 .chart-container img {
                     max-width: 100%;
                     height: auto;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                 }
                 
                 .description {
                     font-style: italic;
                     color: #555;
-                    margin-bottom: 1cm;
+                    margin: 0.5cm 0 1cm 0;
+                    line-height: 1.4;
                 }
                 
                 .metrics-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     gap: 1cm;
-                    margin: 1cm 0;
+                    margin: 1cm 0 2cm 0;
                 }
                 
                 .metric-card {
                     border: 1px solid #eee;
-                    padding: 0.5cm;
-                    border-radius: 0.2cm;
+                    padding: 0.8cm;
+                    border-radius: 0.3cm;
                     page-break-inside: avoid;
                     background-color: #f9f9f9;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
                 }
                 
                 .metric-card h3 {
                     margin-top: 0;
+                    color: #3498db;
                     border-bottom: 1px solid #ddd;
-                    padding-bottom: 0.2cm;
+                    padding-bottom: 0.3cm;
+                    margin-bottom: 0.5cm;
+                }
+                
+                .metric-card p {
+                    font-size: 14pt;
+                    margin: 0.5cm 0;
                 }
                 
                 .summary-section {
-                    margin-top: 1cm;
+                    margin-top: 2cm;
+                    padding-top: 1cm;
                     page-break-before: always;
                 }
                 
@@ -1614,10 +1633,9 @@ function generateEnhancedPrintableReport(userId) {
                     text-align: center;
                     font-size: 9pt;
                     color: #7f8c8d;
-                    margin-top: 2cm;
-                    padding-bottom: 1cm;
-                    border-top: 1px solid #eee;
+                    margin-top: 3cm;
                     padding-top: 0.5cm;
+                    border-top: 1px solid #eee;
                 }
                 
                 .print-button {
@@ -1630,16 +1648,36 @@ function generateEnhancedPrintableReport(userId) {
                     border-radius: 0.2cm;
                     font-size: 12pt;
                     cursor: pointer;
+                    transition: background 0.3s;
+                }
+                
+                .print-button:hover {
+                    background: #2980b9;
                 }
                 
                 .citation {
                     font-size: 8pt;
                     margin-top: 0.5cm;
                     color: #555;
+                    line-height: 1.4;
+                }
+                
+                .no-data {
+                    font-style: italic;
+                    color: #777;
+                    padding: 1cm;
+                    border: 1px dashed #ddd;
+                    text-align: center;
+                    margin: 1cm 0;
                 }
                 
                 @media print {
                     .print-button { display: none; }
+                    
+                    /* Fix for page breaks */
+                    h2, h3 { page-break-after: avoid; }
+                    .chart-container { page-break-inside: avoid; }
+                    .metric-card { page-break-inside: avoid; }
                 }
             </style>
         </head>
@@ -1656,7 +1694,7 @@ function generateEnhancedPrintableReport(userId) {
             <div class="chart-container">
                 ${trajectoryChart ? 
                   `<img src="${convertCanvasToImage(trajectoryChart)}" alt="Identity Trajectory Chart">` : 
-                  '<p>Identity trajectory data not available</p>'}
+                  '<div class="no-data">Identity trajectory data not available</div>'}
             </div>
             
             <h2>Identity Distribution</h2>
@@ -1664,7 +1702,7 @@ function generateEnhancedPrintableReport(userId) {
             <div class="chart-container">
                 ${pieChart ? 
                   `<img src="${convertCanvasToImage(pieChart)}" alt="Identity Distribution Chart">` : 
-                  '<p>Identity distribution data not available</p>'}
+                  '<div class="no-data">Identity distribution data not available</div>'}
             </div>
             
             <h2>Day-to-Day Dynamics</h2>
@@ -1672,7 +1710,15 @@ function generateEnhancedPrintableReport(userId) {
             <div class="chart-container">
                 ${dynamicsChart ? 
                   `<img src="${convertCanvasToImage(dynamicsChart)}" alt="Day-to-Day Dynamics Chart">` : 
-                  '<p>Day-to-day dynamics data not available</p>'}
+                  '<div class="no-data">Day-to-day dynamics data not available</div>'}
+            </div>
+            
+            <h2>Daily Events</h2>
+            <p class="description">This chart shows the characteristics of daily events that may have influenced your identity changes.</p>
+            <div class="chart-container">
+                ${eventsChart ? 
+                  `<img src="${convertCanvasToImage(eventsChart)}" alt="Daily Events Chart">` : 
+                  '<div class="no-data">Event data not available</div>'}
             </div>
             
             <div class="summary-section">
@@ -1680,11 +1726,21 @@ function generateEnhancedPrintableReport(userId) {
                 <div class="metrics-grid">
                     ${renderMetricsCards(metrics)}
                 </div>
+                
+                <h3>Understanding Your Results</h3>
+                <p>This report provides insights into how your leader and follower identities fluctuate over time. Your leader-follower identity dynamics reflect natural variations in how you see yourself in different contexts and situations.</p>
+                
+                <p>Key patterns to look for:</p>
+                <ul>
+                    <li><strong>Identity Balance:</strong> How balanced are your leader and follower identities over time?</li>
+                    <li><strong>Switching Patterns:</strong> How frequently do you switch between dominant identities?</li>
+                    <li><strong>Event Impacts:</strong> Do significant events trigger identity changes?</li>
+                </ul>
             </div>
             
             <div class="footer">
                 <p>© ${new Date().getFullYear()} Leadership Identity Framework | Generated via LFIT.me</p>
-                <p class="citation">Nieberle, K. W., Acton, B. P., Fu, Y. A., Lord, R. G., & Braun, S. (2024). Lead Today, Follow Tomorrow? How to Manage the Ebb and Flow of Leader and Follower Identities.</p>
+                <p class="citation">Nieberle, K. W., Acton, B. P., Fu, Y. A., Lord, R. G., & Braun, S. (2024). Lead Today, Follow Tomorrow? How to Manage the Ebb and Flow of Leader and Follower Identities. In S. Braun, T. Hansbrough, G. A. Ruark, R. G. Lord, R. J. Hall & O. Epitropaki (Eds.), Navigating Leadership: Evidence-Based Strategies for Leadership Development (pp. 9-35). Routledge.</p>
             </div>
             
             <button class="print-button" onclick="window.print()">Save as PDF / Print Report</button>
@@ -1721,6 +1777,10 @@ function generateEnhancedPrintableReport(userId) {
 
     // Helper function to render metric cards
     function renderMetricsCards(metrics) {
+        if (!metrics || Object.keys(metrics).length === 0) {
+            return '<div class="no-data" style="grid-column: span 2;">No metric data available</div>';
+        }
+        
         return Object.entries(metrics).map(([key, value]) => `
             <div class="metric-card">
                 <h3>${formatMetricName(key)}</h3>
@@ -1742,27 +1802,111 @@ function generateEnhancedPrintableReport(userId) {
  */
 function getReportMetrics() {
     try {
-        // Get summary metrics from the charts and data
-        const leaderAvg = calculateMeanForElement('leader-avg') || 'N/A';
-        const followerAvg = calculateMeanForElement('follower-avg') || 'N/A';
+        // Try to get metric values from the DOM elements first
+        const leaderAvg = document.getElementById('leader-avg')?.textContent || 'N/A';
+        const followerAvg = document.getElementById('follower-avg')?.textContent || 'N/A';
+        const leaderVariability = document.getElementById('leader-variability')?.textContent || 'N/A';
+        const followerVariability = document.getElementById('follower-variability')?.textContent || 'N/A';
         
-        // Calculate identity distribution
-        const distribution = calculateIdentityDistribution();
+        // Get metrics from charts if available
+        const distribution = getIdentityTypesFromChart();
         
         return {
-            leader_identity_average: `${leaderAvg} / 5`,
-            follower_identity_average: `${followerAvg} / 5`,
-            most_common_identity: distribution.mostCommon,
-            identity_stability: distribution.stability,
-            data_collection_period: `${distribution.days || 'N/A'} days`,
-            identity_switching_frequency: distribution.switchFrequency || 'N/A'
+            'leader_identity_average': `${leaderAvg}`,
+            'follower_identity_average': `${followerAvg}`,
+            'leader_identity_variability': `${leaderVariability}`,
+            'follower_identity_variability': `${followerVariability}`,
+            'most_common_identity': distribution.mostCommon || 'N/A',
+            'identity_switching_frequency': distribution.switchFrequency || 'N/A',
+            'data_collection_period': `${distribution.days || 'N/A'} days`,
         };
     } catch (e) {
         console.error('Error getting report metrics:', e);
+        // Return fallback metrics with placeholder values
         return {
-            error: 'Could not calculate metrics due to missing data'
+            'leader_identity_average': 'N/A',
+            'follower_identity_average': 'N/A',
+            'leader_identity_variability': 'N/A',
+            'follower_identity_variability': 'N/A',
+            'most_common_identity': 'N/A',
+            'identity_switching_frequency': 'N/A',
+            'data_collection_period': 'N/A'
         };
     }
+}
+
+/**
+ * Gets identity types distribution from chart data
+ */
+function getIdentityTypesFromChart() {
+    try {
+        // Try to extract data from the pie chart if it exists
+        const pieChart = window.identitySwitchesPieChart;
+        
+        if (pieChart && pieChart.data && pieChart.data.labels) {
+            const labels = pieChart.data.labels;
+            const data = pieChart.data.datasets[0].data;
+            
+            // Find most common identity type
+            let maxIndex = 0;
+            for (let i = 1; i < data.length; i++) {
+                if (data[i] > data[maxIndex]) {
+                    maxIndex = i;
+                }
+            }
+            
+            const mostCommon = labels[maxIndex];
+            const totalDays = data.reduce((sum, val) => sum + val, 0);
+            
+            // Calculate switch frequency if we have access to switches data
+            let switchFrequency = 'N/A';
+            if (window.identitySwitchesChart) {
+                // This is a simplification - the actual calculation would depend on your data structure
+                switchFrequency = 'See chart for details';
+            }
+            
+            return {
+                mostCommon,
+                days: totalDays,
+                switchFrequency
+            };
+        }
+        
+        // Fallback: check DOM for identity information
+        const identityTypeElements = document.querySelectorAll('.identity-type-count');
+        if (identityTypeElements.length > 0) {
+            let maxCount = 0;
+            let maxType = 'N/A';
+            let totalDays = 0;
+            
+            identityTypeElements.forEach(el => {
+                const count = parseInt(el.textContent, 10);
+                const type = el.previousElementSibling?.textContent || 'Unknown';
+                
+                totalDays += count;
+                if (count > maxCount) {
+                    maxCount = count;
+                    maxType = type;
+                }
+            });
+            
+            return {
+                mostCommon: maxType,
+                days: totalDays,
+                switchFrequency: 'See chart for details'
+            };
+        }
+        
+    } catch (e) {
+        console.error('Error extracting identity types:', e);
+    }
+    
+    // Return default values if we couldn't extract anything
+    return {
+        mostCommon: 'N/A',
+        days: 'N/A',
+        switchFrequency: 'N/A'
+    };
 }
 
 /**
